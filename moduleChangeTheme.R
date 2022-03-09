@@ -37,14 +37,17 @@ uiChangeThemeOutput <- function()
 
 
 # Server functions --------------------------------------------------------
-serverChangeTheme <- function(input, output, session)
+serverChangeTheme <- function(id)
 {
-  observeEvent(
-    input$dbxChangeTheme, 
-    {
-      output$uiChangeTheme <- renderUI({
-        shinyDashboardThemes(theme = input$dbxChangeTheme)
-      })
-    }
-  )
+  moduleServer(id,
+               function(input,output,session){
+                 observeEvent(
+                   input$dbxChangeTheme, 
+                   {
+                     output$uiChangeTheme <- renderUI({
+                       shinyDashboardThemes(theme = input$dbxChangeTheme)
+                     })
+                   }
+                 )                 
+               })
 }

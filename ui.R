@@ -5,10 +5,12 @@ library(tidyverse)
 library(DT)
 
 source("moduleChangeTheme.R")
+source("similarityPagesUI.R")
 
 train_set = read_csv("Data/Train Set.csv")
 
 ui <- dashboardPage(
+  # set title width or else title is cutoff
   dashboardHeader(title = "NBA Free Agency Dashboard", titleWidth = 300),
   dashboardSidebar(sidebarMenu(
     menuItem("Similarity Scores", tabName = "similarity_scores"),
@@ -17,33 +19,7 @@ ui <- dashboardPage(
   dashboardBody(uiChangeThemeOutput(),
                 tabItems(
                   tabItem(tabName = "similarity_scores",
-                          fluidPage(
-                            fluidRow(
-                              column(
-                                width = 4,
-                                pickerInput(
-                                  inputId = "historical_fa_name",
-                                  label = "Free Agent Name",
-                                  choices = (train_set %>% distinct(player_id, player) %>%
-                                               arrange(player) %>% pull(player)),
-                                  options = pickerOptions(
-                                    liveSearch = TRUE,
-                                    liveSearchNormalize = TRUE,
-                                    size = 10
-                                  ),
-                                  selected = "DeMar DeRozan"
-                                ),
-                                pickerInput(
-                                  inputId = "historical_fa_yr",
-                                  label = "Free Agency Year",
-                                  choices = NULL,
-                                  selected = 2016
-                                )
-                              ),
-                              column(width = 8,
-                                     DT::dataTableOutput("sel_table"))
-                            ),
-                            fluidRow(DT::dataTableOutput("sim_table")))),
+                          sim_page_ui(id="hist",df=train_set)),
                   tabItem(tabName = "tabThemes", uiChangeThemeDropdown())
                 ))
 )
