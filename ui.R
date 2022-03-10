@@ -3,6 +3,7 @@ library(shinyWidgets)
 library(dashboardthemes)
 library(tidyverse)
 library(DT)
+library(shinycssloaders)
 
 source("moduleChangeTheme.R")
 source("similarityPagesUI.R")
@@ -19,7 +20,9 @@ ui <- dashboardPage(
   dashboardBody(uiChangeThemeOutput(),
                 tabItems(
                   tabItem(tabName = "similarity_scores",
-                          sim_page_ui(id="hist",df=train_set)),
+                          fluidPage(sim_page_ui(
+                            id = "hist", df = train_set
+                          ))),
                   tabItem(tabName = "tabThemes", uiChangeThemeDropdown())
                 ))
 )

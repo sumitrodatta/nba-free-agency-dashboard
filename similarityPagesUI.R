@@ -4,9 +4,11 @@ sim_page_ui<-function(id,df){
         pickerInput(
           inputId = ns("historical_fa_name"),
           label = "Free Agent Name",
-          choices = (
-            df %>% distinct(player_id, player) %>%
-              arrange(player) %>% pull(player)
+          # use player id as unique underlying var, but use player names for easier user experience
+          choices = ({
+            player_choices=df %>% distinct(player_id, player) %>% arrange(player)
+            setNames(player_choices$player_id, nm=player_choices$player)
+          }
           ),
           options = pickerOptions(
             liveSearch = TRUE,
@@ -19,7 +21,10 @@ sim_page_ui<-function(id,df){
           label = "Free Agency Year",
           choices = NULL
         ),
-  DT::dataTableOutput(ns("sel_table")),
-  DT::dataTableOutput(ns("sim_table")))
+  withSpinner(tagList(DT::dataTableOutput(ns("sel_table")),DT::dataTableOutput(ns("sim_table"))),
+              type = 6,
+              proxy.height = '100px'
+  )
+  )
 }
 
