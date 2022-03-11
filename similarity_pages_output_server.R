@@ -1,30 +1,18 @@
-
-
-
-sim_page_server <- function(id, df, sim_scores_df) {
+sim_page_output_server <- function(id, df, sim_scores_df) {
   moduleServer(id,
                function(input, output, session) {
-                 names = reactive({
-                   sim_scores_df %>% filter(player_id.x == input$historical_fa_name)
-                 })
-                 
-                 # update choices of year depending on which player was selected
-                 observeEvent(names(), {
-                   freezeReactiveValue(input, "historical_fa_yr")
-                   year_choices = names() %>% distinct(season.x, seas_id_base)
-                   updatePickerInput(
-                     session = session,
-                     inputId = "historical_fa_yr",
-                     choices = setNames(year_choices$seas_id_base, year_choices$season.x)
-                   )
-                 })
-                 
                  # have reactive filter of similarity rather than static load
                  filtered = reactive({
                    req(input$historical_fa_yr)
-                   a <-
-                     names() %>% filter(seas_id_base == input$historical_fa_yr)
-                   a %>% slice_max(similarity, n = 5) %>% ungroup()
+                   a <- sim_scores_df %>% filter(player_id.x == input$historical_fa_name,
+                                                 seas_id_base == input$historical_fa_yr)
+                   if(!input$same_player_comp){
+                     a=a %>% filter(player_id.y!=input$historical_fa_name)
+                   } 
+                   if(input$one_row_per_comp){
+                     a<-a %>% group_by(player_id.y) %>% slice_max(similarity) %>% ungroup()
+                   }
+                   a %>% slice_max(similarity, n = 5)
                  })
                  
                  output$sim_table <- DT::renderDataTable({
@@ -38,7 +26,7 @@ sim_page_server <- function(id, df, sim_scores_df) {
                    ) %>%
                      formatPercentage(c("similarity", "first_year_percent_of_cap"), digits =
                                         2)
-                 },)
+                 })
                  
                  output$sel_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
@@ -55,7 +43,7 @@ sim_page_server <- function(id, df, sim_scores_df) {
                    ) %>%
                      formatPercentage("first_year_percent_of_cap", digits =
                                         2)
-                 },)
+                 })
                  
                  output$stats_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
@@ -74,6 +62,6 @@ sim_page_server <- function(id, df, sim_scores_df) {
                      ),
                      rownames = FALSE
                    )
-                 },)
+                 })
                })
 }

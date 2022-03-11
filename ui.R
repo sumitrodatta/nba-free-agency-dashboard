@@ -6,7 +6,8 @@ library(DT)
 library(shinycssloaders)
 
 source("moduleChangeTheme.R")
-source("similarityPagesUI.R")
+source("similarity_pages_input_ui.R")
+source("similarity_pages_output_ui.R")
 
 train_set = read_csv("Data/Train Set.csv")
 
@@ -20,9 +21,12 @@ ui <- dashboardPage(
   dashboardBody(uiChangeThemeOutput(),
                 tabItems(
                   tabItem(tabName = "similarity_scores",
-                          fluidPage(sim_page_ui(
-                            id = "hist", df = train_set
-                          ))),
+                          fluidPage(
+                            fluidRow(sim_page_input_ui(id = "hist", df = train_set)),
+                            hr(),
+                            fluidRow(sim_page_output_ui(id="hist"))
+                          )
+                          ),
                   tabItem(tabName = "tabThemes", uiChangeThemeDropdown())
                 ))
 )

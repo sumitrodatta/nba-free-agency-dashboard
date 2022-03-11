@@ -2,7 +2,8 @@ library(DT)
 library(tidyverse)
 
 source("moduleChangeTheme.R")
-source("similarityPagesServer.R")
+source("similarity_pages_input_server.R")
+source("similarity_pages_output_server.R")
 
 train_set = read_csv("Data/Train Set.csv")
 similarity_scores=read_csv("Data/Similarity Scores.csv") %>% 
@@ -13,7 +14,8 @@ similarity_scores=read_csv("Data/Similarity Scores.csv") %>%
 
 server <- function(input, output,session) {
   
-  sim_page_server(id="hist",df=train_set,sim_scores_df=similarity_scores)
+  sim_page_input_server(id="hist",df=train_set)
+  sim_page_output_server(id="hist",df=train_set,sim_scores_df=similarity_scores)
   
   #from https://github.com/nik01010/dashboardThemeSwitcher
   serverChangeTheme(id = "moduleChangeTheme")
