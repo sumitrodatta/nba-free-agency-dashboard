@@ -4,6 +4,7 @@ library(dashboardthemes)
 library(tidyverse)
 library(DT)
 library(shinycssloaders)
+library(plotly)
 
 source("moduleChangeTheme.R")
 source("similarity_pages_input_ui.R")
@@ -16,6 +17,7 @@ ui <- dashboardPage(
   dashboardHeader(title = "NBA Free Agency Dashboard", titleWidth = 300),
   dashboardSidebar(sidebarMenu(
     menuItem("Similarity Scores", tabName = "similarity_scores"),
+    menuItem("Similarity Scores Current Year", tabName = "sim_scores_curr"),
     menuItem("Change Theme", tabName = "tabThemes")
   )),
   dashboardBody(uiChangeThemeOutput(),
@@ -24,9 +26,16 @@ ui <- dashboardPage(
                           fluidPage(
                             fluidRow(sim_page_input_ui(id = "hist", df = train_set)),
                             hr(),
-                            fluidRow(sim_page_output_ui(id="hist"))
+                            fluidRow(sim_page_output_ui(id = "hist", df = train_set))
                           )
                           ),
+                  tabItem(tabName = "sim_scores_curr",
+                          fluidPage(
+                            fluidRow(sim_page_input_ui(id = "curr", df = train_set %>% filter(season==2021))),
+                            hr(),
+                            fluidRow(sim_page_output_ui(id = "curr", df = train_set))
+                          )
+                  ),
                   tabItem(tabName = "tabThemes", uiChangeThemeDropdown())
                 ))
 )

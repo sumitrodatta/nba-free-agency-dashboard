@@ -1,3 +1,37 @@
+#filter based off which plot group choice made
+grouped_plots<-function(group_of_vars,plot_df){
+  if (group_of_vars=="Availability"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^g(s)?|mp"))
+  }
+  else if (group_of_vars=="3-Point Shooting"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^x3pa|x3p_per_|x3p_last")) %>%
+      mutate(variable=factor(
+        variable,levels=c("x3p_per_game","x3pa_per_game","x3p_last_3_yrs_per_game","x3pa_last_3_yrs_per_game")))
+  }
+  else if (group_of_vars=="2-Point Shooting"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^x2pa|x2p_per_|x2p_last")) %>%
+      mutate(variable=factor(
+        variable,levels=c("x2p_per_game","x2pa_per_game","x2p_last_3_yrs_per_game","x2pa_last_3_yrs_per_game")))
+  }
+  else if (group_of_vars=="Advanced Cumulative"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"[o|d]ws|^vorp$"))
+  }
+  else if (group_of_vars=="Advanced Rate"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"pos_vorp|ws_per_48"))
+  }
+  else if (group_of_vars=="Counting Stats Current Yr"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"(orb|drb|ast|stl|blk|tov)_per_game")) %>%
+      mutate(variable=factor(
+        variable,levels=c("orb_per_game","drb_per_game","ast_per_game","stl_per_game","blk_per_game","tov_per_game")))
+  }
+  p<-plot_df %>% ggplot(aes(x=fct_reorder(players,seas_id),y=value,fill=variable))+
+    geom_col(position="dodge")+
+    labs(x="players")+
+    dark_theme_gray()
+  return(p)
+}
+
+
 sim_page_output_server <- function(id, df, sim_scores_df) {
   moduleServer(id,
                function(input, output, session) {
@@ -15,6 +49,20 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                    a %>% slice_max(similarity, n = 5)
                  })
                  
+                 filtered_df=reactive({df %>% filter(seas_id %in% filtered()$seas_id_base |
+                                             seas_id %in% filtered()$to_compare) %>% 
+                   mutate(players=paste0(player," (",season,")"))})
+                 
+                 plottable_vars=names(df %>% select(-c(seas_id:experience,type)))
+                 
+                 y_options=reactive({plottable_vars[plottable_vars != input$xcol]})
+                 
+                 observeEvent(y_options(),{
+                   choices=plottable_vars[plottable_vars != input$xcol]
+                   updatePickerInput(session=session,inputId="ycol",choices=choices)
+                 }
+                 )
+                 
                  output$sim_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
                    datatable(
@@ -31,7 +79,7 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                  output$sel_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
                    datatable(
-                     df %>% filter(seas_id %in% filtered()$seas_id_base) %>%
+                     df %>% filter(seas_id==input$historical_fa_yr) %>%
                        select(
                          season,
                          player:experience,
@@ -48,11 +96,8 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                  output$stats_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
                    datatable(
-                     df %>% filter(
-                       seas_id %in% filtered()$seas_id_base |
-                         seas_id %in% filtered()$to_compare
-                     ) %>%
-                       select(-c(seas_id, player_id)) %>% relocate(player),
+                     filtered_df() %>%
+                       select(-c(seas_id, player_id,players)) %>% relocate(player),
                      extensions = "FixedColumns",
                      options = list(
                        scrollX = TRUE,
@@ -63,5 +108,22 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                      rownames = FALSE
                    )
                  })
+                 
+                 output$two_vars_plot<-renderPlotly({
+                   req(input$historical_fa_yr)
+                   p<-filtered_df() %>% ggplot(aes(x=.data[[input$xcol]],y=.data[[input$ycol]],fill=players))+
+                     geom_point(size=5)+
+                     dark_theme_gray()
+                   ggplotly(p)
+                 })
+                 
+                 output$group_plots <- renderPlotly({
+                   req(input$historical_fa_yr)
+                   a=filtered_df() %>%
+                     select(-type) %>% pivot_longer(.,cols=g_percent:percent_of_pos_vorp,names_to="variable")
+                   choice=grouped_plots(group_of_vars=input$group,plot_df=a)
+                   ggplotly(choice)
+                 })
+                 
                })
 }

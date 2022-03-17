@@ -17,15 +17,6 @@ sim_page_input_ui <- function(id, df) {
           size = 10
         )
       ),
-      # choices null because depend on player selected
-      pickerInput(
-        inputId = ns("historical_fa_yr"),
-        label = "Free Agency Year",
-        choices = NULL
-      )
-    ),
-    column(
-      width = 6,
       br(),
       switchInput(
         inputId = ns("same_player_comp"),
@@ -35,7 +26,17 @@ sim_page_input_ui <- function(id, df) {
         onLabel = "Yes",
         offLabel = "No",
         onStatus = "success",
-        offStatus = "danger"
+        offStatus = "danger",
+        inline = TRUE
+      ),
+    ),
+    column(
+      width = 6,
+      # choices null because depend on player selected
+      pickerInput(
+        inputId = ns("historical_fa_yr"),
+        label = "Free Agency Year",
+        choices = NULL
       ),
       br(),
       switchInput(
@@ -46,7 +47,8 @@ sim_page_input_ui <- function(id, df) {
         onLabel = "Yes",
         offLabel = "No",
         onStatus = "success",
-        offStatus = "danger"
+        offStatus = "danger",
+        inline = TRUE
       )
     )
   )
