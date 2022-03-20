@@ -10,8 +10,8 @@ source("similarity_pages_output_server.R")
 train_set = read_csv("Data/Train Set.csv")
 similarity_scores=read_csv("Data/Similarity Scores.csv") %>% 
   #add identifying info to tibble
-  left_join(.,train_set %>% select(seas_id,player_id,player,season),by=c('seas_id_base'='seas_id')) %>%
-  left_join(.,train_set %>% select(seas_id,player_id,player,season,age,experience,type:first_year_percent_of_cap),
+  left_join(.,train_set %>% select(seas_id,player_id,season),by=c('seas_id_base'='seas_id')) %>%
+  left_join(.,train_set %>% select(seas_id,player_id,season),
             by=c('to_compare'='seas_id'))
 
 server <- function(input, output,session) {

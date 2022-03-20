@@ -13,6 +13,11 @@ grouped_plots<-function(group_of_vars,plot_df){
       mutate(variable=factor(
         variable,levels=c("x2p_per_game","x2pa_per_game","x2p_last_3_yrs_per_game","x2pa_last_3_yrs_per_game")))
   }
+  else if (group_of_vars=="Free Throw Shooting"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^fta|ft_per_|ft_last")) %>%
+      mutate(variable=factor(
+        variable,levels=c("ft_per_game","fta_per_game","ft_last_3_yrs_per_game","fta_last_3_yrs_per_game")))
+  }
   else if (group_of_vars=="Advanced Cumulative"){
     plot_df<-plot_df %>% filter(str_detect(variable,"[o|d]ws|^vorp$"))
   }
@@ -22,9 +27,18 @@ grouped_plots<-function(group_of_vars,plot_df){
   else if (group_of_vars=="Counting Stats Current Yr"){
     plot_df<-plot_df %>% filter(str_detect(variable,"(orb|drb|ast|stl|blk|tov)_per_game")) %>%
       mutate(variable=factor(
-        variable,levels=c("orb_per_game","drb_per_game","ast_per_game","stl_per_game","blk_per_game","tov_per_game")))
+        variable,levels=c("orb_per_game","drb_per_game",
+                          "ast_per_game","stl_per_game",
+                          "blk_per_game","tov_per_game")))
   }
-  p<-plot_df %>% ggplot(aes(x=fct_reorder(players,seas_id),y=value,fill=variable))+
+  else if (group_of_vars=="Counting Stats Last 3 Yrs"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"(orb|drb|ast|stl|blk|tov)_last")) %>%
+      mutate(variable=factor(
+        variable,levels=c("orb_last_3_yrs_per_game","drb_last_3_yrs_per_game",
+                          "ast_last_3_yrs_per_game","stl_last_3_yrs_per_game",
+                          "blk_last_3_yrs_per_game","tov_last_3_yrs_per_game")))
+  }
+  p<-plot_df %>% ggplot(aes(x=players,y=value,fill=variable))+
     geom_col(position="dodge")+
     labs(x="players")+
     dark_theme_gray()
@@ -66,7 +80,10 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                  output$sim_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
                    datatable(
-                     filtered() %>% select(-c(seas_id_base:player_id.y)),
+                     df %>% filter(seas_id %in% filtered()$to_compare) %>%
+                       left_join(.,filtered() %>% select(similarity,to_compare),by=c("seas_id"="to_compare")) %>%
+                       select(similarity,player,season,age,experience,type:first_year_percent_of_cap) %>%
+                       arrange(desc(similarity)),
                      #since only five (max six with ties), don't need pagination on tables
                      options = list(lengthChange = FALSE, dom =
                                       't'),
@@ -120,7 +137,8 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                  output$group_plots <- renderPlotly({
                    req(input$historical_fa_yr)
                    a=filtered_df() %>%
-                     select(-type) %>% pivot_longer(.,cols=g_percent:percent_of_pos_vorp,names_to="variable")
+                     select(-type) %>% pivot_longer(.,cols=g_percent:percent_of_pos_vorp,names_to="variable") %>%
+                     mutate(players=fct_reorder(players,seas_id))
                    choice=grouped_plots(group_of_vars=input$group,plot_df=a)
                    ggplotly(choice)
                  })

@@ -39,8 +39,9 @@ sim_page_output_ui<-function(id,df){
       dropdown(
         pickerInput(
           inputId = ns('group'),label = 'Group',choices = c(
-            "Availability","3-Point Shooting","2-Point Shooting",
-            "Advanced Cumulative","Advanced Rate","Counting Stats Current Yr"
+            "Availability","3-Point Shooting","2-Point Shooting","Free Throw Shooting",
+            "Advanced Cumulative","Advanced Rate","Counting Stats Current Yr",
+            "Counting Stats Last 3 Yrs"
           )
         ),
         status = "danger", style = "unite", icon = icon("cog", lib = "glyphicon"),
