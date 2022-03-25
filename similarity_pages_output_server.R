@@ -18,6 +18,11 @@ grouped_plots<-function(group_of_vars,plot_df){
       mutate(variable=factor(
         variable,levels=c("ft_per_game","fta_per_game","ft_last_3_yrs_per_game","fta_last_3_yrs_per_game")))
   }
+  else if (group_of_vars=="Passing"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^(ast|tov)")) %>%
+      mutate(variable=factor(
+        variable,levels=c("ast_per_game","tov_per_game","ast_last_3_yrs_per_game","tov_last_3_yrs_per_game")))
+  }
   else if (group_of_vars=="Advanced Cumulative"){
     plot_df<-plot_df %>% filter(str_detect(variable,"[o|d]ws|^vorp$"))
   }
@@ -46,7 +51,7 @@ grouped_plots<-function(group_of_vars,plot_df){
 }
 
 
-sim_page_output_server <- function(id, df, sim_scores_df) {
+sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
   moduleServer(id,
                function(input, output, session) {
                  # have reactive filter of similarity rather than static load
@@ -56,7 +61,12 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                                                  seas_id_base == input$historical_fa_yr)
                    if(!input$same_player_comp){
                      a=a %>% filter(player_id.y!=input$historical_fa_name)
-                   } 
+                   }
+                   if(show_future){
+                     if(!input$future_comp){
+                       a=a %>% filter(season.y<=(a %>% select(season.x) %>% pull(season.x)))
+                     }
+                   }
                    if(input$one_row_per_comp){
                      a<-a %>% group_by(player_id.y) %>% slice_max(similarity) %>% ungroup()
                    }
@@ -82,12 +92,15 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                    datatable(
                      df %>% filter(seas_id %in% filtered()$to_compare) %>%
                        left_join(.,filtered() %>% select(similarity,to_compare),by=c("seas_id"="to_compare")) %>%
-                       select(similarity,player,season,age,experience,type:first_year_percent_of_cap) %>%
+                       select(similarity,photo=urlPlayerThumbnail,player,season,age,experience,type:first_year_percent_of_cap) %>%
                        arrange(desc(similarity)),
                      #since only five (max six with ties), don't need pagination on tables
-                     options = list(lengthChange = FALSE, dom =
+                     options = list(
+                       scrollX = TRUE,
+                       lengthChange = FALSE, dom =
                                       't'),
-                     rownames = FALSE
+                     rownames = FALSE,
+                     escape=FALSE
                    ) %>%
                      formatPercentage(c("similarity", "first_year_percent_of_cap"), digits =
                                         2)
@@ -99,12 +112,16 @@ sim_page_output_server <- function(id, df, sim_scores_df) {
                      df %>% filter(seas_id==input$historical_fa_yr) %>%
                        select(
                          season,
+                         photo=urlPlayerThumbnail,
                          player:experience,
                          type:first_year_percent_of_cap
                        ),
-                     options = list(lengthChange = FALSE, dom =
+                     options = list(
+                       scrollX = TRUE,
+                       lengthChange = FALSE, dom =
                                       't'),
-                     rownames = FALSE
+                     rownames = FALSE,
+                     escape=FALSE
                    ) %>%
                      formatPercentage("first_year_percent_of_cap", digits =
                                         2)

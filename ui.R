@@ -24,14 +24,14 @@ ui <- dashboardPage(
                 tabItems(
                   tabItem(tabName = "similarity_scores",
                           fluidPage(
-                            fluidRow(sim_page_input_ui(id = "hist", df = train_set)),
+                            fluidRow(sim_page_input_ui(id = "hist", df = train_set,show_future=TRUE)),
                             hr(),
                             fluidRow(sim_page_output_ui(id = "hist", df = train_set))
                           )
                           ),
                   tabItem(tabName = "sim_scores_curr",
                           fluidPage(
-                            fluidRow(sim_page_input_ui(id = "curr", df = train_set %>% filter(season==2021))),
+                            fluidRow(sim_page_input_ui(id = "curr", df = train_set %>% filter(season==2021),show_future=FALSE)),
                             hr(),
                             fluidRow(sim_page_output_ui(id = "curr", df = train_set))
                           )

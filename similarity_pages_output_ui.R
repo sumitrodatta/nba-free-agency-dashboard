@@ -40,6 +40,7 @@ sim_page_output_ui<-function(id,df){
         pickerInput(
           inputId = ns('group'),label = 'Group',choices = c(
             "Availability","3-Point Shooting","2-Point Shooting","Free Throw Shooting",
+            "Passing",
             "Advanced Cumulative","Advanced Rate","Counting Stats Current Yr",
             "Counting Stats Last 3 Yrs"
           )

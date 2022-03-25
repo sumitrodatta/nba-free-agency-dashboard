@@ -1,4 +1,4 @@
-sim_page_input_ui <- function(id, df) {
+sim_page_input_ui <- function(id, df,show_future) {
   ns = NS(id)
   tagList(
     column(
@@ -17,7 +17,15 @@ sim_page_input_ui <- function(id, df) {
           size = 10
         )
       ),
-      br(),
+      # choices null because depend on player selected
+      pickerInput(
+        inputId = ns("historical_fa_yr"),
+        label = "Free Agency Year",
+        choices = NULL
+      )
+    ),
+    column(
+      width = 6,
       switchInput(
         inputId = ns("same_player_comp"),
         value = TRUE,
@@ -27,18 +35,23 @@ sim_page_input_ui <- function(id, df) {
         offLabel = "No",
         onStatus = "success",
         offStatus = "danger",
-        inline = TRUE
+        inline = TRUE,
+        width="100%"
       ),
-    ),
-    column(
-      width = 6,
-      # choices null because depend on player selected
-      pickerInput(
-        inputId = ns("historical_fa_yr"),
-        label = "Free Agency Year",
-        choices = NULL
-      ),
-      br(),
+      if (show_future){
+        switchInput(
+          inputId = ns("future_comp"),
+          value = TRUE,
+          label = "Future comparisons?",
+          labelWidth = "200px",
+          onLabel = "Yes",
+          offLabel = "No",
+          onStatus = "success",
+          offStatus = "danger",
+          inline = TRUE,
+          width="100%"
+        )        
+      },
       switchInput(
         inputId = ns("one_row_per_comp"),
         value = FALSE,
@@ -48,8 +61,9 @@ sim_page_input_ui <- function(id, df) {
         offLabel = "No",
         onStatus = "success",
         offStatus = "danger",
-        inline = TRUE
+        inline = TRUE,
+        width="100%"
       )
-    )
+      )
   )
 }
