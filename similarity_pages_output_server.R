@@ -23,6 +23,17 @@ grouped_plots<-function(group_of_vars,plot_df){
       mutate(variable=factor(
         variable,levels=c("ast_per_game","tov_per_game","ast_last_3_yrs_per_game","tov_last_3_yrs_per_game")))
   }
+  else if (group_of_vars=="Rebounding"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^(orb|drb)")) %>%
+      mutate(variable=factor(
+        variable,levels=c("orb_per_game","drb_per_game","orb_last_3_yrs_per_game","drb_last_3_yrs_per_game")))
+  }
+  else if (group_of_vars=="Steals, Blocks & Fouls"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"^(stl|blk|pf)")) %>%
+      mutate(variable=factor(
+        variable,levels=c("stl_per_game","blk_per_game","pf_per_game",
+                          "stl_last_3_yrs_per_game","blk_last_3_yrs_per_game","pf_last_3_yrs_per_game")))
+  }
   else if (group_of_vars=="Advanced Cumulative"){
     plot_df<-plot_df %>% filter(str_detect(variable,"[o|d]ws|^vorp$"))
   }
@@ -129,9 +140,12 @@ sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
                  
                  output$stats_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
+                   percent_cols=colnames(filtered_df() %>% select(contains("percent") & !"first_year_percent_of_cap"))
                    datatable(
                      filtered_df() %>%
-                       select(-c(seas_id, player_id,players)) %>% relocate(player),
+                       select(-c(seas_id, player_id, players, 
+                                 type:first_year_percent_of_cap,
+                                 idPlayer:urlPlayerThumbnail)) %>% relocate(player),
                      extensions = "FixedColumns",
                      options = list(
                        scrollX = TRUE,
@@ -140,7 +154,7 @@ sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
                        fixedColumns = list(leftColumns = 4)
                      ),
                      rownames = FALSE
-                   )
+                   ) %>% formatPercentage(percent_cols,digits=2)
                  })
                  
                  output$two_vars_plot<-renderPlotly({
