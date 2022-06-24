@@ -3,15 +3,21 @@ library(nbastatR)
 
 train_set=read_csv("Data/Train Set.csv")
 
-row_numbers=train_set %>% select(seas_id) %>% mutate(row=row_number())
+eval_set=read_csv("Data/Eval Set.csv")
 
-pre_sim_matrix=train_set %>% mutate(type=case_when(type=="UFA"~0,type=="RFA"~1)) %>% 
+train_eval=add_row(train_set,eval_set)
+
+write_csv(train_eval,"Data/Train & Eval Set Combined.csv")
+
+row_numbers=train_eval %>% select(seas_id) %>% mutate(row=row_number())
+
+pre_sim_matrix=train_eval %>% mutate(type=case_when(type=="UFA"~0,type=="RFA"~1)) %>% 
   select(-c(contract_yrs,first_year_percent_of_cap)) %>%
   select(age:percent_of_pos_vorp)
 
 similarity_scores=as_tibble(as.matrix(dist(scale(pre_sim_matrix)))) %>% 
   rowid_to_column() %>% 
-  pivot_longer(cols=`1`:`1227`,names_to="to_compare",values_to="similarity",names_transform=as.integer) %>%
+  pivot_longer(cols=`1`:`1417`,names_to="to_compare",values_to="similarity",names_transform=as.integer) %>%
   mutate(self_compare=(rowid==to_compare),
          similarity=
            scales::rescale(similarity,to=c(1,0))) %>%
@@ -26,7 +32,7 @@ write_csv(similarity_scores,"Data/Similarity Scores.csv")
 Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2)
 assign_nba_players()
 
-playerPhotos=left_join(train_set %>% distinct(player_id,player) %>% mutate(remove_accent=stringi::stri_trans_general(str=player,id="Latin-ASCII")),
+playerPhotos=left_join(train_eval %>% distinct(player_id,player) %>% mutate(remove_accent=stringi::stri_trans_general(str=player,id="Latin-ASCII")),
                        df_dict_nba_players %>% filter(yearSeasonLast>2013) %>% select(namePlayer,idPlayer),by=c("remove_accent"="namePlayer")) %>% 
   select(player_id,player,idPlayer)
 
@@ -42,6 +48,10 @@ players_to_change=playerPhotos %>% filter(is.na(idPlayer)) %>% select(-idPlayer)
                               str_detect(player,"Juan")~"Juancho Hernangomez",
                               str_detect(player,"Iwundu")~"Wes Iwundu",
                               str_detect(player,"Sviato")~"Svi Mykhailiuk",
+                              str_detect(player,"Kevin Knox")~"Kevin Knox II",
+                              str_detect(player,"Lonnie")~"Lonnie Walker IV",
+                              str_detect(player,"Clax")~"Nic Claxton",
+                              str_detect(player,"Woodard")~"Robert Woodard II",
                               str_detect(player,"Ennis|Giles|O'Bryant|Andrew White")~paste(player,"III"),
                               TRUE~paste(player,"Jr."))) %>%
   left_join(.,df_dict_nba_players %>% select(namePlayer,idPlayer))
