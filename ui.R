@@ -9,33 +9,50 @@ library(plotly)
 source("moduleChangeTheme.R")
 source("similarity_pages_input_ui.R")
 source("similarity_pages_output_ui.R")
+source("projections_ui.R")
 
-train_set = read_csv("Data/Train Set.csv")
+train_eval = read_csv("Data/Train & Eval Set Combined.csv")
 
 ui <- dashboardPage(
   # set title width or else title is cutoff
   dashboardHeader(title = "NBA Free Agency Dashboard", titleWidth = 300),
   dashboardSidebar(sidebarMenu(
     menuItem("Similarity Scores", tabName = "similarity_scores"),
-    menuItem("Similarity Scores Current Year", tabName = "sim_scores_curr"),
-    menuItem("Change Theme", tabName = "tabThemes")
+    menuItem("Similarity Scores 2022", tabName = "sim_scores_curr"),
+    menuItem("Change Theme", tabName = "tabThemes"),
+    menuItem("2022 FA Projections", tabName = "projections")
   )),
   dashboardBody(uiChangeThemeOutput(),
                 tabItems(
                   tabItem(tabName = "similarity_scores",
                           fluidPage(
-                            fluidRow(sim_page_input_ui(id = "hist", df = train_set,show_future=TRUE)),
+                            fluidRow(sim_page_input_ui(id = "hist", df = train_eval,show_future=TRUE)),
                             hr(),
-                            fluidRow(sim_page_output_ui(id = "hist", df = train_set))
+                            fluidRow(sim_page_output_ui(id = "hist", df = train_eval))
                           )
                           ),
                   tabItem(tabName = "sim_scores_curr",
                           fluidPage(
-                            fluidRow(sim_page_input_ui(id = "curr", df = train_set %>% filter(season==2021),show_future=FALSE)),
+                            fluidRow(sim_page_input_ui(id = "curr", df = train_eval %>% filter(season==2022),show_future=FALSE)),
                             hr(),
-                            fluidRow(sim_page_output_ui(id = "curr", df = train_set))
+                            fluidRow(sim_page_output_ui(id = "curr", df = train_eval))
                           )
                   ),
-                  tabItem(tabName = "tabThemes", uiChangeThemeDropdown())
+                  tabItem(tabName = "tabThemes", uiChangeThemeDropdown()),
+                  tabItem(tabName = "projections", 
+                          fluidPage(
+                            tabsetPanel(
+                              tabPanel("Option Projections",
+                                       fluidPage(br(),
+                                         proj_ui(id="opt_proj")
+                                         )
+                                       ),
+                              tabPanel("Non-Option Projections",
+                                       fluidPage(br(),
+                                         proj_ui(id="non_opt_proj")
+                                         )
+                              )
+                            )
+                          ))
                 ))
 )

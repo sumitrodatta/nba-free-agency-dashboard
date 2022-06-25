@@ -39,7 +39,7 @@ sim_page_output_ui<-function(id,df){
       dropdown(
         pickerInput(
           inputId = ns('group'),label = 'Group',choices = c(
-            "Availability",
+            "Availability","Minutes Per Game",
             "3-Point Shooting","2-Point Shooting","Free Throw Shooting",
             "Passing","Rebounding","Steals, Blocks & Fouls",
             "Advanced Cumulative","Advanced Rate",

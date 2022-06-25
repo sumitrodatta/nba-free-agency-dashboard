@@ -1,7 +1,10 @@
 #filter based off which plot group choice made
 grouped_plots<-function(group_of_vars,plot_df){
   if (group_of_vars=="Availability"){
-    plot_df<-plot_df %>% filter(str_detect(variable,"^g(s)?|mp"))
+    plot_df<-plot_df %>% filter(str_detect(variable,"^g(s)?"))
+  }
+  else if (group_of_vars=="Minutes Per Game"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"mp"))
   }
   else if (group_of_vars=="3-Point Shooting"){
     plot_df<-plot_df %>% filter(str_detect(variable,"^x3pa|x3p_per_|x3p_last")) %>%
