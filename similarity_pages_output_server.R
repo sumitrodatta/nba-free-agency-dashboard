@@ -1,5 +1,9 @@
 #filter based off which plot group choice made
 grouped_plots<-function(group_of_vars,plot_df){
+  raw_plot_df=plot_df
+  plot_df=plot_df %>%
+    select(-type) %>% pivot_longer(.,cols=g_percent:percent_of_pos_vorp,names_to="variable") %>%
+    mutate(players=fct_reorder(players,seas_id))
   if (group_of_vars=="Availability"){
     plot_df<-plot_df %>% filter(str_detect(variable,"^g(s)?"))
   }
@@ -9,17 +13,29 @@ grouped_plots<-function(group_of_vars,plot_df){
   else if (group_of_vars=="3-Point Shooting"){
     plot_df<-plot_df %>% filter(str_detect(variable,"^x3pa|x3p_per_|x3p_last")) %>%
       mutate(variable=factor(
-        variable,levels=c("x3p_per_game","x3pa_per_game","x3p_last_3_yrs_per_game","x3pa_last_3_yrs_per_game")))
+        variable,levels=c("x3p_per_game","x3pa_per_game","x3p_last_3_yrs_per_game","x3pa_last_3_yrs_per_game"))) %>% 
+      left_join(.,raw_plot_df %>% select(seas_id:player,x3p_percent,x3p_percent_last_3_yrs)) %>%
+      mutate(percent=scales::percent(case_when(str_detect(variable,"x3pa_per")~x3p_percent,
+                                               str_detect(variable,"x3pa_las")~x3p_percent_last_3_yrs,
+                                               TRUE~NA_real_)))
   }
   else if (group_of_vars=="2-Point Shooting"){
     plot_df<-plot_df %>% filter(str_detect(variable,"^x2pa|x2p_per_|x2p_last")) %>%
       mutate(variable=factor(
-        variable,levels=c("x2p_per_game","x2pa_per_game","x2p_last_3_yrs_per_game","x2pa_last_3_yrs_per_game")))
+        variable,levels=c("x2p_per_game","x2pa_per_game","x2p_last_3_yrs_per_game","x2pa_last_3_yrs_per_game"))) %>% 
+      left_join(.,raw_plot_df %>% select(seas_id:player,x2p_percent,x2p_percent_last_3_yrs)) %>%
+      mutate(percent=scales::percent(case_when(str_detect(variable,"x2pa_per")~x2p_percent,
+                                               str_detect(variable,"x2pa_las")~x2p_percent_last_3_yrs,
+                                               TRUE~NA_real_)))
   }
   else if (group_of_vars=="Free Throw Shooting"){
     plot_df<-plot_df %>% filter(str_detect(variable,"^fta|ft_per_|ft_last")) %>%
       mutate(variable=factor(
-        variable,levels=c("ft_per_game","fta_per_game","ft_last_3_yrs_per_game","fta_last_3_yrs_per_game")))
+        variable,levels=c("ft_per_game","fta_per_game","ft_last_3_yrs_per_game","fta_last_3_yrs_per_game")))  %>% 
+      left_join(.,raw_plot_df %>% select(seas_id:player,ft_percent,ft_percent_last_3_yrs)) %>%
+      mutate(percent=scales::percent(case_when(str_detect(variable,"fta_per")~ft_percent,
+                                               str_detect(variable,"fta_las")~ft_percent_last_3_yrs,
+                                               TRUE~NA_real_)))
   }
   else if (group_of_vars=="Passing"){
     plot_df<-plot_df %>% filter(str_detect(variable,"^(ast|tov)")) %>%
@@ -56,6 +72,14 @@ grouped_plots<-function(group_of_vars,plot_df){
         variable,levels=c("orb_last_3_yrs_per_game","drb_last_3_yrs_per_game",
                           "ast_last_3_yrs_per_game","stl_last_3_yrs_per_game",
                           "blk_last_3_yrs_per_game","tov_last_3_yrs_per_game")))
+  }
+  if (str_detect(group_of_vars,"Shooting")){
+    p<-plot_df %>% ggplot(aes(x=players,y=value,fill=variable)) +
+      geom_col(position="dodge")+
+      geom_text(mapping=aes(label=percent),position=position_dodge(0.9), size=3)+
+      labs(x="players")+
+      dark_theme_gray()
+    return(p)
   }
   p<-plot_df %>% ggplot(aes(x=players,y=value,fill=variable))+
     geom_col(position="dodge")+
@@ -170,10 +194,7 @@ sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
                  
                  output$group_plots <- renderPlotly({
                    req(input$historical_fa_yr)
-                   a=filtered_df() %>%
-                     select(-type) %>% pivot_longer(.,cols=g_percent:percent_of_pos_vorp,names_to="variable") %>%
-                     mutate(players=fct_reorder(players,seas_id))
-                   choice=grouped_plots(group_of_vars=input$group,plot_df=a)
+                   choice=grouped_plots(group_of_vars=input$group,plot_df=filtered_df())
                    ggplotly(choice)
                  })
                  
