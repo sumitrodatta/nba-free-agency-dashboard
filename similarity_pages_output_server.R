@@ -91,7 +91,7 @@ sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
                                              seas_id %in% filtered()$to_compare) %>% 
                    mutate(players=paste0(player," (",season,")"))})
                  
-                 plottable_vars=names(df %>% select(-c(seas_id:experience,type)))
+                 plottable_vars=names(df %>% select(-c(seas_id:experience,type,idPlayer,urlPlayerThumbnail)))
                  
                  y_options=reactive({plottable_vars[plottable_vars != input$xcol]})
                  

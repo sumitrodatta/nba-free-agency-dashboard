@@ -19,8 +19,9 @@ ui <- dashboardPage(
   dashboardSidebar(sidebarMenu(
     menuItem("Similarity Scores", tabName = "similarity_scores"),
     menuItem("Similarity Scores 2022", tabName = "sim_scores_curr"),
+    menuItem("2022 FA Projections", tabName = "projections"),
     menuItem("Change Theme", tabName = "tabThemes"),
-    menuItem("2022 FA Projections", tabName = "projections")
+    menuItem("About & FAQ",tabName="about_page")
   )),
   dashboardBody(uiChangeThemeOutput(),
                 tabItems(
@@ -53,6 +54,9 @@ ui <- dashboardPage(
                                          )
                               )
                             )
-                          ))
+                          )),
+                  tabItem(tabName = "about_page",
+                          includeHTML("about_page.html")
+                  )
                 ))
 )
