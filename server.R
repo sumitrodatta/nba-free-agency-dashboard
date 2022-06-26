@@ -2,11 +2,13 @@ library(DT)
 library(tidyverse)
 library(plotly)
 library(ggdark)
+library(readxl)
 
 source("moduleChangeTheme.R")
 source("similarity_pages_input_server.R")
 source("similarity_pages_output_server.R")
 source("projections_server.R")
+source("actuals_server.R")
 
 train_eval = read_csv("Data/Train & Eval Set Combined.csv") %>% left_join(.,read_csv("Data/Player Photos.csv")) %>%
   mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
@@ -21,7 +23,27 @@ options = read_csv("Data/Options.csv") %>% mutate(across(c(`Y1S2 Cap %`,`S1Y2 Ca
 non_options = read_csv("Data/Non-Option Contracts.csv") %>% mutate(across(c(`Y1S2 Cap %`,`S1Y2 Cap %`),~parse_number(.)/100)) %>%
   mutate(across(c(total_Y1S2,total_S1Y2),~parse_number(.)))
 
+actuals = read_excel("Data/Actual Contracts.xlsx",
+                     col_types = c("text","numeric","numeric","numeric","date","text"))
+
+formatted_actuals=left_join(actuals,
+                            train_eval %>% filter(season==2022) %>% 
+                              select(player,type,age,photo=urlPlayerThumbnail)) %>%
+  relocate(photo,age,type,.after="player") %>% mutate(source=paste0('<a href="',source,'" target="_blank">Link</a>')) %>%
+  #when formatted, date jumps one day ahead
+  mutate(date=date+24*60*60)
+
 server <- function(input, output,session) {
+  
+  sendSweetAlert(title = "Information",
+                 html=TRUE,
+                 text=tags$span("The Plotly graphs don't seem to load correctly while using Safari,",
+                                " so I would strongly suggest to alternatively use Chrome or Firefox instead.",
+                                tags$br(),tags$br(),
+                                "In addition, I don't believe the web app is mobile-friendly",
+                                " (those updates are hopefully for next year!), so I would recommend",
+                                " navigating using desktop views."),
+                 type="info")
   
   sim_page_input_server(id="hist",df=train_eval)
   sim_page_output_server(id="hist",df=train_eval,sim_scores_df=similarity_scores,show_future=TRUE)
@@ -33,6 +55,8 @@ server <- function(input, output,session) {
   
   proj_server(id="opt_proj",df=options)
   proj_server(id="non_opt_proj",df=non_options,option_contract=FALSE)
+  
+  actuals_server(id="actuals",df=formatted_actuals)
   
   #from https://github.com/nik01010/dashboardThemeSwitcher
   serverChangeTheme(id = "moduleChangeTheme")

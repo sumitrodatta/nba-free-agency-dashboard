@@ -20,6 +20,7 @@ ui <- dashboardPage(
     menuItem("Similarity Scores", tabName = "similarity_scores"),
     menuItem("Similarity Scores 2022", tabName = "sim_scores_curr"),
     menuItem("2022 FA Projections", tabName = "projections"),
+    menuItem("2022 FA Actual Contracts", tabName = "actuals"),
     menuItem("Change Theme", tabName = "tabThemes"),
     menuItem("About & FAQ",tabName="about_page")
   )),
@@ -57,6 +58,11 @@ ui <- dashboardPage(
                           )),
                   tabItem(tabName = "about_page",
                           includeHTML("about_page.html")
-                  )
+                  ),
+                  tabItem(tabName="actuals",
+                          fluidPage(
+                            proj_ui(id="actuals")
+                            )
+                          )
                 ))
 )

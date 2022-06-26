@@ -1,7 +1,8 @@
 proj_server<-function(id,df,option_contract=TRUE){
   moduleServer(id,
                function(input, output, session) {
-                 formatted_df=datatable(df,filter = list(position = 'top', clear = FALSE),
+                 formatted_df=datatable(df,
+                                        filter = list(position = 'top', clear = FALSE),
                                         options=list(scrollX = TRUE,dom="tip"),rownames = FALSE,
                                         selection = "single") %>% 
                    formatPercentage(c("Y1S2 Cap %", "S1Y2 Cap %"), digits = 2) %>%
