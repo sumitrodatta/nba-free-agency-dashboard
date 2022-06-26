@@ -43,6 +43,10 @@ ui <- dashboardPage(
                   tabItem(tabName = "tabThemes", uiChangeThemeDropdown()),
                   tabItem(tabName = "projections", 
                           fluidPage(
+                              p("In the years-first & salary-second model (Y1S2): a random forest is used as the years prediction, and the mean
+                                of a random forest & a support vector machine is used as the salary prediction."),
+                              p("In the salary-first & years-second model (S1Y2): random forests are used for both components."),
+                              hr(),
                             tabsetPanel(
                               tabPanel("Option Projections",
                                        fluidPage(br(),
