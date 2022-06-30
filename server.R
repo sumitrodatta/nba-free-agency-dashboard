@@ -53,8 +53,8 @@ server <- function(input, output,session) {
                          sim_scores_df=similarity_scores %>% filter(season.x==2022,season.y!=2022),
                          show_future=FALSE)
   
-  proj_server(id="opt_proj",df=options)
-  proj_server(id="non_opt_proj",df=non_options,option_contract=FALSE)
+  proj_server(id="opt_proj",df=options,cap_number=123655000)
+  proj_server(id="non_opt_proj",df=non_options,option_contract=FALSE,cap_number=123655000)
   
   actuals_server(id="actuals",df=formatted_actuals)
   

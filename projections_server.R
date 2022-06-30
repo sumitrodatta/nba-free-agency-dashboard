@@ -1,6 +1,11 @@
-proj_server<-function(id,df,option_contract=TRUE){
+proj_server<-function(id,df,option_contract=TRUE,cap_number){
   moduleServer(id,
                function(input, output, session) {
+                 df=df %>% 
+                   mutate(total_Y1S2=round(`Y1S2 Cap %`*cap_number*((1.05)^(yrs_Y1S2)-1)/0.05,
+                                           digits=-4)) %>%
+                   mutate(total_S1Y2=round(`S1Y2 Cap %`*cap_number*((1.05)^(yrs_S1Y2)-1)/0.05,
+                                           digits=-4))
                  formatted_df=datatable(df,
                                         filter = list(position = 'top', clear = FALSE),
                                         options=list(scrollX = TRUE,dom="tip"),rownames = FALSE,
