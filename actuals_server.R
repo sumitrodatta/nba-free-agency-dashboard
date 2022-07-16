@@ -1,7 +1,7 @@
 actuals_server<-function(id,df){
   moduleServer(id,
                function(input, output, session) {
-                 formatted_df=datatable(df %>% filter(!is.na(player)),
+                 formatted_df=datatable(df %>% filter(!is.na(player)) %>% arrange(desc(`Total Value`)),
                                         filter = list(position = 'top', clear = FALSE),
                                         options=list(
                                           scrollX = TRUE,dom="tip",
