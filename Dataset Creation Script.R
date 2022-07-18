@@ -179,6 +179,8 @@ all_player_pos=bind_rows(pure_position,combo_position) %>%
                              pos %in% c("sf","small_wing","big_wing")~"wing",
                              pos %in% c("pf","c","big_man")~"big"))
 
+rm(advanced_and_totals,combo_position,pbp_last_three_years,pbp_pos_mins,pure_position)
+
 train_eval_set_initiations<-function(df,past=TRUE){
   if (past){
     df<-df %>% select(-ws)
@@ -242,7 +244,7 @@ final_results<-eval_set %>%
 
 options_decisions=inner_join(final_results,current_fa_options) %>%
   arrange(desc(option_amt)) %>%
-  select(player,"Y1S2 Cap %"=yr1_cap_percent_Y1S2,yrs_Y1S2,total_Y1S2,"S1Y2 Cap %"=yr1_cap_percent_S1Y2,yrs_S1Y2,
+  select(player,age,"Y1S2 Cap %"=yr1_cap_percent_Y1S2,yrs_Y1S2,total_Y1S2,"S1Y2 Cap %"=yr1_cap_percent_S1Y2,yrs_S1Y2,
          total_S1Y2,"Option Type"=option_type,"Option Amount"=option_amt)
 
 non_options=anti_join(final_results,current_fa_options %>% select(player)) %>%
@@ -252,6 +254,10 @@ non_options=anti_join(final_results,current_fa_options %>% select(player)) %>%
 
 write_csv(options_decisions,"Data/Options.csv")
 write_csv(non_options,"Data/Non-Option Contracts.csv")
+
+rm(eval_s1_predict,eval_s2_predict,eval_s2_predict_forest,eval_s2_predict_svm,
+   eval_y1_predict,eval_y2_predict,
+   fit_s1_forest,fit_s2_forest,fit_s2_svm,fit_y1_forest,fit_y2_forest)
 
 train_eval=add_row(train_set,eval_set)
 
@@ -265,7 +271,7 @@ pre_sim_matrix=train_eval %>% mutate(type=case_when(type=="UFA"~0,type=="RFA"~1)
 
 similarity_scores=as_tibble(as.matrix(dist(scale(pre_sim_matrix)))) %>% 
   rowid_to_column() %>% 
-  pivot_longer(cols=`1`:`1417`,names_to="to_compare",values_to="similarity",names_transform=as.integer) %>%
+  pivot_longer(cols=!rowid,names_to="to_compare",values_to="similarity",names_transform=as.integer) %>%
   mutate(self_compare=(rowid==to_compare),
          similarity=
            scales::rescale(similarity,to=c(1,0))) %>%
