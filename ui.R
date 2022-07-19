@@ -13,14 +13,16 @@ source("projections_ui.R")
 
 train_eval = read_csv("Data/Train & Eval Set Combined.csv")
 
+current_year=2022
+
 ui <- dashboardPage(
   # set title width or else title is cutoff
   dashboardHeader(title = "NBA Free Agency Dashboard", titleWidth = 300),
   dashboardSidebar(sidebarMenu(
     menuItem("Similarity Scores", tabName = "similarity_scores"),
-    menuItem("Similarity Scores 2022", tabName = "sim_scores_curr"),
-    menuItem("2022 FA Projections", tabName = "projections"),
-    menuItem("2022 FA Actual Contracts", tabName = "actuals"),
+    menuItem(paste("Similarity Scores",current_year), tabName = "sim_scores_curr"),
+    menuItem(paste(current_year,"FA Projections"), tabName = "projections"),
+    menuItem(paste(current_year,"FA Actual Contracts"), tabName = "actuals"),
     menuItem("Change Theme", tabName = "tabThemes"),
     menuItem("About & FAQ",tabName="about_page")
   )),

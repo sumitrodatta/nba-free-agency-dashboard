@@ -10,6 +10,8 @@ source("similarity_pages_output_server.R")
 source("projections_server.R")
 source("actuals_server.R")
 
+current_year=2022
+
 train_eval = read_csv("Data/Train & Eval Set Combined.csv") %>% left_join(.,read_csv("Data/Player Photos.csv")) %>%
   mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
 similarity_scores=read_csv("Data/Similarity Scores.csv") %>% 
@@ -18,16 +20,14 @@ similarity_scores=read_csv("Data/Similarity Scores.csv") %>%
   left_join(.,train_eval %>% select(seas_id,player_id,season),
             by=c('to_compare'='seas_id'))
 
-options = read_csv("Data/Options.csv") %>% mutate(across(c(`Y1S2 Cap %`,`S1Y2 Cap %`),~parse_number(.)/100)) %>%
-  mutate(across(c(total_Y1S2,total_S1Y2,`2021 Option`),~parse_number(.)))
-non_options = read_csv("Data/Non-Option Contracts.csv") %>% mutate(across(c(`Y1S2 Cap %`,`S1Y2 Cap %`),~parse_number(.)/100)) %>%
-  mutate(across(c(total_Y1S2,total_S1Y2),~parse_number(.)))
+options = read_csv("Data/Options.csv")
+non_options = read_csv("Data/Non-Option Contracts.csv")
 
 actuals = read_excel("Data/Actual Contracts.xlsx",
                      col_types = c("text","numeric","numeric","numeric","date","text"))
 
 formatted_actuals=left_join(actuals,
-                            train_eval %>% filter(season==2022) %>% 
+                            train_eval %>% filter(season==current_year) %>% 
                               select(player,type,age,photo=urlPlayerThumbnail)) %>%
   relocate(photo,age,type,.after="player") %>% mutate(source=paste0('<a href="',source,'" target="_blank">Link</a>')) %>%
   #when formatted, date jumps one day ahead
@@ -48,13 +48,13 @@ server <- function(input, output,session) {
   sim_page_input_server(id="hist",df=train_eval)
   sim_page_output_server(id="hist",df=train_eval,sim_scores_df=similarity_scores,show_future=TRUE)
 
-  sim_page_input_server(id="curr",df=train_eval %>% filter(season==2022))
+  sim_page_input_server(id="curr",df=train_eval %>% filter(season==current_year))
   sim_page_output_server(id="curr",df=train_eval,
-                         sim_scores_df=similarity_scores %>% filter(season.x==2022,season.y!=2022),
+                         sim_scores_df=similarity_scores %>% filter(season.x==current_year,season.y!=current_year),
                          show_future=FALSE)
   
-  proj_server(id="opt_proj",df=options,cap_number=123655000)
-  proj_server(id="non_opt_proj",df=non_options,option_contract=FALSE,cap_number=123655000)
+  proj_server(id="opt_proj",df=options)
+  proj_server(id="non_opt_proj",df=non_options,option_contract=FALSE)
   
   actuals_server(id="actuals",df=formatted_actuals)
   
