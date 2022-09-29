@@ -35,15 +35,15 @@ formatted_actuals=left_join(actuals,
 
 server <- function(input, output,session) {
   
-  sendSweetAlert(title = "Information",
-                 html=TRUE,
-                 text=tags$span("The Plotly graphs don't seem to load correctly while using Safari,",
-                                " so I would strongly suggest to alternatively use Chrome or Firefox instead.",
-                                tags$br(),tags$br(),
-                                "In addition, I don't believe the web app is mobile-friendly",
-                                " (those updates are hopefully for next year!), so I would recommend",
-                                " navigating using desktop views."),
-                 type="info")
+  # sendSweetAlert(title = "Information",
+  #                html=TRUE,
+  #                text=tags$span("The Plotly graphs don't seem to load correctly while using Safari,",
+  #                               " so I would strongly suggest to alternatively use Chrome or Firefox instead.",
+  #                               tags$br(),tags$br(),
+  #                               "In addition, I don't believe the web app is mobile-friendly",
+  #                               " (those updates are hopefully for next year!), so I would recommend",
+  #                               " navigating using desktop views."),
+  #                type="info")
   
   sim_page_input_server(id="hist",df=train_eval)
   sim_page_output_server(id="hist",df=train_eval,sim_scores_df=similarity_scores,show_future=TRUE)
