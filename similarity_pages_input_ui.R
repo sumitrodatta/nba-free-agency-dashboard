@@ -11,6 +11,7 @@ sim_page_input_ui <- function(id, df,show_future) {
           player_choices = df %>% distinct(player_id, player) %>% arrange(player)
           setNames(player_choices$player_id, nm = player_choices$player)
         }),
+        selected=df %>% slice_max(vorp_last_3_yrs,n=1) %>% pull(player_id),
         options = pickerOptions(
           liveSearch = TRUE,
           liveSearchNormalize = TRUE,

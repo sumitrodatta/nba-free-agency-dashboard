@@ -43,7 +43,8 @@ sim_page_output_ui<-function(id,df){
             "3-Point Shooting","2-Point Shooting","Free Throw Shooting",
             "Passing","Rebounding","Steals, Blocks & Fouls",
             "Advanced Cumulative","Advanced Rate",
-            "Counting Stats Current Yr","Counting Stats Last 3 Yrs"
+            "Counting Stats Current Yr","Counting Stats Last 3 Yrs",
+            "All-League Voting"
           )
         ),
         status = "danger", style = "unite", icon = icon("cog", lib = "glyphicon"),

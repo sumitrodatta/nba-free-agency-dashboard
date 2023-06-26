@@ -5,13 +5,18 @@ library(tidymodels)
 library(janitor)
 #zoo allows rolling operations
 library(zoo)
-#matrix stats
-library(matrixStats)
+library(readxl)
 
-#edit these every year from https://basketball.realgm.com/nba/info/salary_cap
-first_yr_min_salary=1637966
-current_cap=123655000
+current_year=2023
 
+#edit every year from https://basketball.realgm.com/nba/info/salary_cap
+first_yr_min_salary=1774999
+
+salary_cap_hist=read_csv("Data/Input Data/Salary Cap History.csv") %>% mutate(season=season-1)
+
+current_cap=salary_cap_hist %>% filter(season==current_year) %>% pull()
+
+#specify columns because otherwise birth year is read as logical
 cols_for_stats=cols(
   .default = col_double(),
   player = col_character(),
@@ -21,7 +26,9 @@ cols_for_stats=cols(
 )
 
 advanced<-read_csv("Data/Input Data/Advanced.csv",col_types = cols_for_stats) %>%
-  select(seas_id:mp,ows:ws,vorp) %>% mutate(ws_per_48=ws/mp*48,.before="vorp")
+  select(seas_id:mp,ows:ws,vorp) %>% 
+  #players with 0 mp (rounded down) would have div by zero error
+  mutate(ws_per_48=if_else(mp==0,0,ws/mp*48),.before="vorp")
 totals<-read_csv("Data/Input Data/Player Totals.csv",col_types = cols_for_stats)
 #max games per season for players on multiple teams
 max_games_tots=totals %>% filter(tm=="TOT") %>% group_by(season,lg,tm) %>%
@@ -41,8 +48,8 @@ advanced_and_totals<-left_join(totals_enhanced,advanced) %>%
   arrange(season,player) %>%
   mutate(g_percent=g/max_games_playable,gs_percent=gs/g,.before=g) %>% 
   select(-c(gs,max_games_playable)) %>% 
-  #filter for only last ten years for faster pre-processing
-  filter(season > 2009) %>% ungroup()
+  #filter since 1997 to match w/play-by-play + faster pre-processing
+  filter(season > 1996) %>% ungroup()
 
 play_by_play<-read_csv("Data/Input Data/Player Play By Play.csv") %>% 
   filter(tm!="TOT") %>%
@@ -61,13 +68,67 @@ pbp_pos_mins=play_by_play %>%
   mutate(across(mp:c_mp,sum,.names="{col}_summed")) %>% 
   slice(1) %>% ungroup() %>% select(-c(mp:c_mp))
 
-rm(cols_for_stats,advanced,totals,max_games_tots,max_games,totals_enhanced,
-   play_by_play)
+all_defense_voting_since_2014=read_csv("Data/Input Data/all-def.csv") %>%
+  pivot_longer(cols=first_fwd:second_g_2,names_to="points",values_to="player") %>% 
+  #2023 awards have no comma between last name & first name
+  mutate(player=if_else(year==2023,str_replace(player," ",", "),player)) %>%
+  mutate(player=gsub("\\(.*","",player)) %>% 
+  mutate(player=gsub("--.*","",player)) %>% mutate(player=str_trim(player)) %>% 
+  separate(player,into=c("last","first"),sep=", ",convert = TRUE) %>%
+  unite("player",c(first,last),sep=" ",na.rm=TRUE) %>%
+  mutate(points_given=case_when(
+    (str_detect(points,"first"))~2,
+    (str_detect(points,"second"))~1,
+  )) %>%
+  mutate(player=case_when(
+    #3 players in all-def 2015 have one dash rather than two
+    str_detect(player," - IND")~"George Hill",
+    str_detect(player," - SA")~"Danny Green",
+    str_detect(player," - Mil")~"Giannis Antetokounmpo",
+    str_detect(player,"PJ Tucker")~"P.J. Tucker",
+    str_detect(player,"TJ McConnell")~"T.J. McConnell",
+    str_detect(player,"Ginobili")~"Manu Ginóbili",
+    str_detect(player,"Porzingis")~"Kristaps Porziņģis",
+    str_detect(player,"Jokic")~"Nikola Jokić",
+    str_detect(player,"Doncic")~"Luka Dončić",
+    str_detect(player,"Schroder")~"Dennis Schröder",
+    str_detect(player,"Robert Williams III")~"Robert Williams",
+    str_detect(player,"Michael Jr. Porter")~"Michael Porter Jr.",
+    str_detect(player,"Jr. Jaren Jackson")~"Jaren Jackson Jr.",
+    str_detect(player,"O.G. Anunoby")~"OG Anunoby",
+    TRUE~player)) %>%
+  #replace non-ascii dashes
+  mutate(player=str_replace(player,"\u2010","-")) %>% 
+  mutate(vote_position=word(points,start=2,sep="_")) %>%
+  select(-points) %>% rename(season=year)
+
+all_d_vote_shares_since_2014=all_defense_voting_since_2014 %>% 
+  #points maximum is number of ballots * 2 points for first-team vote
+  #number of ballots is number of choices divided by 10 (5 1st team, 5 2nd team)
+  group_by(season) %>% mutate(pts_max=n()/10*2) %>%
+  group_by(season,player,pts_max) %>% 
+  summarize(pts_won=sum(points_given),
+            x1st_tm=sum(points_given==2),
+            x2nd_tm=sum(points_given==1)) %>% 
+  ungroup() %>% mutate(share=pts_won/pts_max)
+
+all_d_vote_shares_until_2013=read_excel("Data/Input Data/All-Defense Voting < 2013.xlsx")
+
+all_d_vote_shares_since_1991=bind_rows(all_d_vote_shares_since_2014,
+                                       all_d_vote_shares_until_2013) %>%
+  select(season,player,all_defense_share=share)
+
+all_nba_voting_shares=read_csv("Data/Input Data/End of Season Teams (Voting).csv") %>% 
+  filter(type=="All-NBA") %>% 
+  select(season,player,seas_id,player_id,all_nba_share=share)
+
+rm(cols_for_stats,
+   advanced,totals,max_games_tots,max_games,totals_enhanced,play_by_play,
+   all_defense_voting_since_2014,all_d_vote_shares_since_2014,
+   all_d_vote_shares_until_2013)
 
 past_free_agents<-read_csv("Data/Input Data/Past Free Agents.csv")
 
-#subtract one from year to match up with offseason in which contract was signed
-salary_cap_hist<-read_csv("Data/Input Data/Salary Cap History.csv") %>% mutate(season=season-1)
 #create variable of first year salary as percentage of cap
 #easier to compare across years
 past_free_agents<-past_free_agents %>% select(-c(terms,Source)) %>% 
@@ -77,19 +138,23 @@ past_free_agents<-past_free_agents %>% select(-c(terms,Source)) %>%
 
 current_fa<-read_csv("Data/Input Data/Current Free Agents.csv")
 #separate out options to compare what players options get if declined
-current_fa_options<-current_fa %>% filter(str_detect(type,"PO|CO")) %>% 
+current_fa_options<-current_fa %>% filter(str_detect(type,"Player|Club")) %>% 
   select(-c(experience,contract_yrs)) %>% 
   rename(option_type=type,option_amt=first_year_percent_of_cap)
 #make player options all declined (UFA's)
 #make club options ufa or rfa depending on exp
 current_fa<-current_fa %>%
-  mutate(type=case_when((type=="PO"|(type=="CO" & experience >= 4))~"UFA",
-                        (type=="CO" & experience < 4)~"RFA",
+  mutate(type=case_when((type=="Player"|(type=="Club" & experience >= 4))~"UFA",
+                        (type=="Club" & experience < 4)~"RFA",
                         TRUE~type)) %>% 
   group_by(player) %>% select(-experience) %>% slice(1) %>% ungroup() %>% 
   mutate(first_year_percent_of_cap=NA)
 
-three_year_rolling_stats=advanced_and_totals %>% group_by(player_id) %>% 
+stats_and_shares=advanced_and_totals %>% 
+  left_join(.,all_nba_voting_shares) %>% 
+  left_join(.,all_d_vote_shares_since_1991) %>% 
+  replace_na(list(all_nba_share=0,all_defense_share=0))
+three_year_rolling_stats_and_shares=stats_and_shares %>% group_by(player_id) %>% 
   #three year sum
   mutate(across(-c(1:9,fg_percent,x3p_percent,
                    x2p_percent:e_fg_percent,ft_percent),
@@ -125,8 +190,10 @@ three_year_rolling_stats=advanced_and_totals %>% group_by(player_id) %>%
          .after="gs_percent_last_3_yrs") %>%
   select(-c(g_last_3_yrs,mp_last_3_yrs:pf_last_3_yrs,ws_last_3_yrs)) %>% 
   ungroup() %>% 
-  #rescale games percentages over 3 years back to 0-1
-  mutate(across(g_percent_last_3_yrs:gs_percent_last_3_yrs,~./3)) %>%
+  #rescale games percentages & vote shares over 3 years back to 0-1
+  mutate(across(c(g_percent_last_3_yrs:gs_percent_last_3_yrs,
+                  all_nba_share_last_3_yrs,
+                  all_defense_share_last_3_yrs),~./3)) %>%
   replace_na(list(fg_percent=0,x3p_percent=0,x2p_percent=0,
                   e_fg_percent=0,ft_percent=0))
 
@@ -146,8 +213,8 @@ pbp_last_three_years=pbp_pos_mins %>% group_by(player_id) %>%
 #assign pure positions to players with 75% of time at one position
 pure_position=pbp_last_three_years %>% 
   pivot_longer(.,cols=c(pg_percent_summed_last_3_yrs:c_percent_summed_last_3_yrs),
-               names_to = "pos",values_to = "percent_at_pos") %>% group_by(seas_id) %>% 
-  slice_max(percent_at_pos) %>% ungroup() %>%
+               names_to = "pos",values_to = "percent_at_pos") %>% 
+  group_by(seas_id) %>% slice_max(percent_at_pos) %>% ungroup() %>%
   filter(percent_at_pos>0.75) %>% mutate(pos=word(pos,1,sep="_"))
 
 combo_position=
@@ -163,10 +230,11 @@ combo_position=
                names_to = "pos",values_to = "percent_at_pos") %>% 
   group_by(seas_id) %>% slice_max(percent_at_pos) %>% ungroup() %>%
   #4 players had 2 separate combo positions listed
-  filter(!(player=="Terrance Roberson" & pos=="big_wing") &
-           !(player=="Vince Hunter" & pos=="small_wing") &
+  filter(!(player=="Terrance Roberson" & season==2001 & pos=="big_wing") &
            !(player=="Ty Jerome" & season==2020 & pos=="small_wing") &
-           !(player=="Anthony Gill" & season==2021 & pos=="big_man"))
+           !(player=="Anthony Gill" & season==2021 & pos=="big_man") &
+           !(player=="Chris Duarte" & season==2022 & pos=="combo_guard") &
+           !(player=="Jordan Hall" & season==2023 & pos=="combo_guard"))
 
 all_player_pos=bind_rows(pure_position,combo_position) %>% 
   #2 players had 0 MP, so they were lost in both combo & pure
@@ -179,13 +247,19 @@ all_player_pos=bind_rows(pure_position,combo_position) %>%
                              pos %in% c("sf","small_wing","big_wing")~"wing",
                              pos %in% c("pf","c","big_man")~"big"))
 
-rm(advanced_and_totals,combo_position,pbp_last_three_years,pbp_pos_mins,pure_position)
+rm(advanced_and_totals,
+   all_d_vote_shares_since_1991,all_nba_voting_shares,
+   combo_position,pbp_last_three_years,pbp_pos_mins,pure_position)
 
 train_eval_set_initiations<-function(df,past=TRUE){
+  init_df=inner_join(three_year_rolling_stats_and_shares,df)
   if (past){
-    df<-df %>% select(-ws)
+    init_df<-init_df %>% 
+    #multiple free agents with same name in same season
+    filter(!(player=="Tony Mitchell" & seas_id==25056)) %>%
+    filter(!(player=="Chris Johnson" & seas_id==23991))
   }
-  final_df=inner_join(three_year_rolling_stats,df) %>% 
+  final_df=init_df %>% 
     left_join(.,all_player_pos) %>% group_by(season,pos_group) %>% 
     mutate(position_vorp=sum(vorp_last_3_yrs)) %>% ungroup() %>%
     mutate(percent_of_pos_vorp=vorp_last_3_yrs/position_vorp) %>%
@@ -216,14 +290,22 @@ eval_s2_predict_svm=predict(fit_s2_svm,
                             new_data=eval_set %>% select(-contract_yrs) %>%
                               bind_cols(contract_yrs=eval_y1_predict))
 eval_s2_predict=tibble(forest=eval_s2_predict_forest %>% pull(),
-                       svm=eval_s2_predict_svm %>% pull()) %>% rowwise() %>%
-  mutate(m=mean(c_across(forest:svm))) %>% ungroup() %>% pull(m) 
+                       svm=eval_s2_predict_svm %>% pull()) %>%
+  mutate(m=(forest+svm)/2) %>% pull(m)
 
 eval_s1_predict=predict(fit_s1_forest,new_data=eval_set) %>% pull()
 eval_y2_predict=as.numeric(as.character(
   predict(fit_y2_forest,new_data=eval_set %>% select(-first_year_percent_of_cap) %>%
             bind_cols(first_year_percent_of_cap=eval_s1_predict)) %>% 
     pull()))
+
+calculate_total_value<-function(cap_percent,years){
+  #first year salary is base for all years
+  salary_base=cap_percent*current_cap*years
+  #amount over base in raises
+  amount_in_raises=(0.5*years^2-0.5*years)*0.05*cap_percent*current_cap
+  return(salary_base+amount_in_raises)
+}
 
 final_results<-eval_set %>% 
   select(-c(contract_yrs,first_year_percent_of_cap)) %>%
@@ -236,21 +318,23 @@ final_results<-eval_set %>%
   mutate(yrs_S1Y2=ifelse(yr1_cap_percent_S1Y2<=first_yr_min_salary/current_cap,0,yrs_S1Y2)) %>%
   mutate(yr1_cap_percent_S1Y2=ifelse(yrs_S1Y2==0,0,yr1_cap_percent_S1Y2)) %>% 
   mutate(total_Y1S2=
-           round(yr1_cap_percent_Y1S2*current_cap*((1.05)^(yrs_Y1S2)-1)/0.05,digits=-4),
+           round(calculate_total_value(yr1_cap_percent_Y1S2,yrs_Y1S2),digits=-4),
          total_S1Y2=
-           round(yr1_cap_percent_S1Y2*current_cap*((1.05)^(yrs_S1Y2)-1)/0.05,digits=-4)) %>%
-  mutate(yr1_cap_percent_Y1S2=round(yr1_cap_percent_Y1S2,digits=4),
+           round(
+             round(calculate_total_value(yr1_cap_percent_S1Y2,yrs_S1Y2),digits=-4),
+             digits=-4)) %>%
+mutate(yr1_cap_percent_Y1S2=round(yr1_cap_percent_Y1S2,digits=4),
          yr1_cap_percent_S1Y2=round(yr1_cap_percent_S1Y2,digits=4))
 
 options_decisions=inner_join(final_results,current_fa_options) %>%
   arrange(desc(option_amt)) %>%
-  select(player,age,"Y1S2 Cap %"=yr1_cap_percent_Y1S2,yrs_Y1S2,total_Y1S2,"S1Y2 Cap %"=yr1_cap_percent_S1Y2,yrs_S1Y2,
-         total_S1Y2,"Option Type"=option_type,"Option Amount"=option_amt)
+  select(player_id,player,yr1_cap_percent_Y1S2,yrs_Y1S2,total_Y1S2,yr1_cap_percent_S1Y2,yrs_S1Y2,
+         total_S1Y2,option_type,option_amt)
 
 non_options=anti_join(final_results,current_fa_options %>% select(player)) %>%
   arrange(desc((yr1_cap_percent_Y1S2+yr1_cap_percent_S1Y2)/2)) %>%
-  rename("Y1S2 Cap %"=yr1_cap_percent_Y1S2, "S1Y2 Cap %"=yr1_cap_percent_S1Y2) %>%
-  select(player,age,type,"Y1S2 Cap %",yrs_Y1S2,total_Y1S2,"S1Y2 Cap %",yrs_S1Y2,total_S1Y2)
+  select(player_id,player,type,yr1_cap_percent_Y1S2,yrs_Y1S2,total_Y1S2,yr1_cap_percent_S1Y2,yrs_S1Y2,
+         total_S1Y2)
 
 write_csv(options_decisions,"Data/Options.csv")
 write_csv(non_options,"Data/Non-Option Contracts.csv")
@@ -286,12 +370,26 @@ Sys.setenv("VROOM_CONNECTION_SIZE" = 131072 * 2)
 assign_nba_players()
 
 playerPhotos=left_join(train_eval %>% distinct(player_id,player) %>% mutate(remove_accent=stringi::stri_trans_general(str=player,id="Latin-ASCII")),
-                       df_dict_nba_players %>% filter(yearSeasonLast>2013) %>% select(namePlayer,idPlayer),by=c("remove_accent"="namePlayer")) %>% 
-  select(player_id,player,idPlayer)
+                       df_dict_nba_players %>% filter(yearSeasonLast>1997) %>% select(namePlayer,idPlayer),by=c("remove_accent"="namePlayer")) %>% 
+  select(player_id,player,idPlayer) %>%
+  filter(
+    !(player=="Mike James" & player_id==3339 & idPlayer !=2229) &
+      !(player=="Chris Johnson" & player_id==3921 & idPlayer !=203187) &
+      !(player=="Chris Johnson" & player_id==4075 & idPlayer !=202419) &
+      !(player=="Chris Wright" & player_id==3990 & idPlayer !=203203) &
+      !(player=="Chris Wright" & player_id==4076 & idPlayer !=202874) &
+      !(player=="Tony Mitchell" & player_id==4211 & idPlayer !=203502) &
+      !(player=="Mike James" & player_id==4548 & idPlayer !=1628455) &
+      !(player=="Brandon Williams" & player_id==4910 & idPlayer !=1585))
 
 players_to_change=playerPhotos %>% filter(is.na(idPlayer)) %>% select(-idPlayer) %>%
-  mutate(namePlayer=case_when(str_detect(player,"\\.")~str_remove_all(player,"\\."),
+  mutate(namePlayer=case_when(str_detect(player,"Xavier Tillman Sr.")~"Xavier Tillman",
+                              str_detect(player,"\\.")~str_remove_all(player,"\\."),
                               str_detect(player,"PJ")~"P.J. Dozier",
+                              str_detect(player,"Hamady")~"Hamady Ndiaye",
+                              str_detect(player,"Jeff Taylor")~"Jeffery Taylor",
+                              str_detect(player,"Vince Hunter")~"Vincent Hunter",
+                              str_detect(player,"Tre Scott")~"Trevon Scott",
                               str_detect(player,"Kanter")~"Enes Freedom",
                               str_detect(player,"Marcus Morris")~"Marcus Morris Sr.",
                               str_detect(player,"Creek")~"Mitchell Creek",
@@ -306,7 +404,7 @@ players_to_change=playerPhotos %>% filter(is.na(idPlayer)) %>% select(-idPlayer)
                               str_detect(player,"Lonnie")~"Lonnie Walker IV",
                               str_detect(player,"Clax")~"Nic Claxton",
                               str_detect(player,"Woodard")~"Robert Woodard II",
-                              str_detect(player,"Ennis|Giles|O'Bryant|Andrew White")~paste(player,"III"),
+                              str_detect(player,"Ennis|Giles|O'Bryant|Andrew White|Perry Jones")~paste(player,"III"),
                               TRUE~paste(player,"Jr."))) %>%
   left_join(.,df_dict_nba_players %>% select(namePlayer,idPlayer))
 

@@ -8,92 +8,59 @@
       About
    </h2>
    <p>
-      This web app was created by Sumitro Datta. For any questions or concerns, feel free to reach out to me via email at
-      sumitrodatta@gmail.com! The source code for this app is <a
-         href="https://github.com/sumitrodatta/nba-free-agency-dashboard">here</a> on GitHub while the source code for
-      the predictions & final report is <a href="https://github.com/sumitrodatta/contract-prediction-2022">here</a> on
-      GitHub.
+      This web app was created by Sumitro Datta. For any questions or concerns, feel free to reach out to me via email at sumitrodatta at gmail dot com! The source code for this app is <a href="https://github.com/sumitrodatta/nba-free-agency-dashboard">here</a> on GitHub while the source code for the predictions & final report is <a href="https://github.com/sumitrodatta/contract-prediction-2023">here</a> on GitHub.
    </p>
    <p>
-      Note: The Plotly graphs don't seem to load correctly while using the Safari browser, so I would strongly suggest
-      to alternatively use Google Chrome or Mozilla Firefox instead. In addition, I don't believe the web app is
-      mobile-friendly (those updates are hopefully for next year!), so I would recommend navigating using desktop views.
+      I don't believe the web app is mobile-friendly, so I would recommend navigating using desktop views.
    </p>
    <h2>
       Acknowledgements
    </h2>
    <p>
-      <a href="https://www.spotrac.com/nba/contracts/">Spotrac</a>, <a
-         href="https://www.basketballinsiders.com/nba-salaries/">Basketball-Insiders</a> and <a
-         href="https://capology.com">Capology</a> for being sources of contract information like guarantees and
-      year-by-year salaries. Spotrac is also the source of the evaluation set/free agent class. Capology has since
-      pivoted to becoming a football-only source of salaries & club finances.
+      <a href="https://www.spotrac.com/nba/contracts/">Spotrac</a>, <a href="https://www.basketballinsiders.com/nba-salaries/">Basketball-Insiders</a> and <a href="https://capology.com">Capology</a> for being sources of contract information like guarantees and year-by-year salaries. Spotrac is also the source of the evaluation set/free agent class. Capology has since pivoted to becoming a football-only source of salaries & club finances.
    </p>
    <p>
-      <a href="https://basketball.realgm.com/nba/info/salary_cap">RealGM</a> for their detailed salary cap history &
-      minimum salary scale tables.
+      <a href="https://basketball.realgm.com/nba/info/salary_cap">RealGM</a> for their detailed salary cap history & minimum salary scale tables.
    </p>
    <p>
-      <a href="https://www.basketball-reference.com">Basketball-Reference</a> for being the source of all the stats
-      required to train the models, as well as operating as a secondary source with the above two data-gathering endeavors through their <a
-         href="https://www.basketball-reference.com/friv/free_agents.fcgi">free agent tracker</a> and <a
-         href="https://www.basketball-reference.com/contracts/">contracts section</a>.
+      <a href="https://www.basketball-reference.com">Basketball-Reference</a> for being the source of all the stats required to train the models, as well as operating as a secondary source with the above two data-gathering endeavors through their <a href="https://www.basketball-reference.com/friv/free_agents.fcgi">free agent tracker</a> and <a href="https://www.basketball-reference.com/contracts/">contracts section</a> (seems like the free agent tracker has been discontinued and now redirects to the contracts section).
    </p>
    <p>
-      Everyone I asked for feedback on some design aspects, and special shoutout to Arty for helping me
-      figure out how to get the latest player headshot photos!
+      Everyone I asked for feedback on some design aspects, and special shoutout to Arty for helping me figure out how to get the latest player headshot photos!
    </p>
    <h2>
       FAQ
    </h2>
    <ol>
       <li><b>How are the similarity scores calculated?</b></li>
-      <p>The train set (2016-2021 free agent stats) and evaluation set (2022 free agent stats) were combined. The target variables were discarded. Each column was scaled to a standard normal distribution with a mean of 0 and a standard deviation of 1. The Euclidean distance between every pair of rows was calculated. This is done by squaring the difference in each column's values between the rows, summing these squares and then taking the square root of this sum. A Euclidean distance of 0 means there is no difference in any column between the two rows, which would be the case when a row is compared to itself. The Euclidean distances were then rescaled between 0 and 1, where a higher distance corresponds to a lower similarity score and a zero distance corresponds to a 100% similarity score.</p>
+      <p>
+         The train set (2012-2022 free agent stats) and evaluation set (2023 free agent stats) were combined. The target variables were discarded. Each column was scaled to a standard normal distribution with a mean of 0 and a standard deviation of 1. The Euclidean distance between every pair of rows was calculated. This is done by squaring the difference in each column's values between the rows, summing these squares and then taking the square root of this sum. A Euclidean distance of 0 means there is no difference in any column between the two rows, which would be the case when a row is compared to itself. The Euclidean distances were then rescaled between 0 and 1, where a higher distance corresponds to a lower similarity score and a zero distance corresponds to a 100% similarity score.
+      </p>
       <li><b>What were the underlying stats you used as inputs to the models?</b></li>
       <p>
-         I initially used player age, player experience (number of seasons played), contract-year box score per-game
-         statistics as well as Offensive Win Shares, Defensive Win Shares, Value Over Replacement Player and Win Shares
-         per 48 Minutes. There's anecdotal evidence that players exert more effort in their contract year. I also used
-         box-score per-game statistics accumulated over the last 3 seasons, as players do get paid on past performance.
-         3 years also allows me to keep the same model for restricted free agents.
+         I initially used player age, player experience (number of seasons played), contract-year box score per-game statistics as well as Offensive Win Shares, Defensive Win Shares, Value Over Replacement Player and Win Shares per 48 Minutes. There's anecdotal evidence that players exert more effort in their contract year. I also used box-score per-game statistics accumulated over the last 3 seasons, as players do get paid on past performance. 3 years also allows me to keep the same model for restricted free agents.
       <ul>
-         <li>My thought is that the rookie year is a bonus: great if you did well, but doesn't matter in the grand
-            scheme of things if you did poorly.</li>
+         <li>My thought is that the rookie year is a bonus: great if you did well, but doesn't matter in the grand scheme of things if you did poorly.</li>
          <li>A rookie extension is more based on how the player improved over the course of that initial contract.</li>
-         <li>For example, if Luka Dončić had a worse rookie year but had the same level of play that he has achieved in
-            his second and third year (as well as next year), I highly doubt that Dallas would have offered him a
-            significantly less amount of money due to that substandard rookie year</li>
+         <li>For example, if Luka Dončić had a worse rookie year but had the same level of play that he has achieved in his second and third year (as well as next year), I highly doubt that Dallas would have offered him a significantly less amount of money due to that substandard rookie year</li>
       </ul>
       </p>
       <p>
-         In the first iteration of this project, games played and games started were scaled to a normal distribution due
-         to fluctuations in games played between seasons caused by the COVID-19 pandemic. I converted the games started
-         to a percentage of games played and the games played to a percentage of maximum playable games. This maximum
-         differed for players who played for multiple teams in one season.
+         In the first iteration of this project, games played and games started were scaled to a normal distribution due to fluctuations in games played between seasons caused by the COVID-19 pandemic. I converted the games started to a percentage of games played and the games played to a percentage of maximum playable games. This maximum differed for players who played for multiple teams in one season.
       </p>
-      <p>Finally, feedback on a previous iteration of this project alerted me to the concept of positional scarcity.
-         Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff
-         contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that
-         is deemed to be the last one in a talent tier above the remaining free agents in the same position. I bucketed
-         players into 3 positions (guard, wing and big) based on their minutes played over the last 3 seasons, and I
-         took their last-3-seasons VORP as a percent of their positional group's available VORP in that offseason. As an
-         example from this year, Kyrie Irving was classified as a guard and accumulated 6.6 VORP over the last 3
-         seasons. All other guards available in free agency accumulated a total of 33.9 VORP over the last 3 seasons, so
-         Kyrie's percent of positional VORP comes out to 0.1946.</p>
+      <p>
+         Another concern that I noticed is that top tier players have depressed contract predictions. Due to the smaller number of players on the court and smaller rosters in general, an individual player's importance is heightened compared to other team sports. As such, elite players get paid the most money. To identify elite players, I brought in end-of-season All-Defense and All-NBA Team voting.
+      </p>
+      <p>
+         Finally, feedback on a previous iteration of this project alerted me to the concept of positional scarcity. Teams will overpay for the potential piece that puts them "over the hump", whether that be into playoff contention or the more loftier goal of championship contention. Teams might also panic to acquire a player that is deemed to be the last one in a talent tier above the remaining free agents in the same position. I bucketed players into 3 positions (guard, wing and big) based on their minutes played over the last 3 seasons, and I took their last-3-seasons VORP as a percent of their positional group's available VORP in that offseason. As an example from this year, Kyrie Irving was classified as a guard and accumulated 8.4 VORP over the last 3 seasons. All other guards available in free agency accumulated a total of 45.6 VORP over the last 3 seasons, so Kyrie's percent of positional VORP comes out to 18.42%.
+      </p>
       <li><b>How did you predict two targets at once?</b></li>
       <p>
-         Since I was predicting two targets in the contract years and the first year percent of the salary cap which
-         were highly correlated with each other, I decided to predict them in sequence. I ran models to predict one
-         target without the other as a predictor, chose the best performing model (be that a single model or an ensemble
-         of multiple models) and used the first target's predictions as an input to predict the second target. One
-         potential problem is compounding errors. If there's an incorrect year prediction, it might lead to an incorrect
-         salary prediction.
+         Since I was predicting two targets in the contract years and the first year percent of the salary cap which were highly correlated with each other, I decided to predict them in sequence. I ran models to predict one target without the other as a predictor, chose the best performing model (be that a single model or an ensemble of multiple models) and used the first target's predictions as an input to predict the second target. One potential problem is compounding errors. If there's an incorrect year prediction, it might lead to an incorrect salary prediction.
       </p>
       <li><b>What models did you test on?</b></li>
       <p>
-         Predicting the first year percent of salary cap was a regression problem, while the contract years were seen as
-         a classification problem. A 2.5-year contract doesn't make much sense, so it was in our best interest to
-         discretize the years and store them as factors rather than round a regression result.
+         Predicting the first year percent of salary cap was a regression problem, while the contract years were seen as a classification problem. A 2.5-year contract doesn't make much sense, so it was in our best interest to discretize the years and store them as factors rather than round a regression result.
       </p>
       <p>
          I used a total of six models.
@@ -103,17 +70,14 @@
                <li>the separation is due to the classification/regression split</li>
             </ul>
          </li>
-         <li>k-nearest neighbors model: take the distance between the statistics of two players (the absolute value of
-            the difference) and then take the average of the outcome variable of the k nearest neighbours
+         <li>k-nearest neighbors model: take the distance between the statistics of two players (the absolute value of the difference) and then take the average of the outcome variable of the k nearest neighbours
             <ul>
                <li>the intuition being that similar players get similar contracts</li>
             </ul>
          </li>
-         <li>decision tree model (<i>rpart</i>): maybe as a player passes certain statistical thresholds, their contract
-            increases
+         <li>decision tree model (<i>rpart</i>): maybe as a player passes certain statistical thresholds, their contract increases
             <ul>
-               <li>only using for predicting the contract years; since there are so many different salary percentages, a
-                  solitary decision tree would either be useless or far too complicated</li>
+               <li>only using for predicting the contract years; since there are so many different salary percentages, a solitary decision tree would either be useless or far too complicated</li>
             </ul>
          </li>
          <li>random forest model (<i>ranger</i>): reduces instability by averaging multiple trees
@@ -125,23 +89,24 @@
             <ul>
                <li>support vectors are the points closest to the hyperplane, named as such because the hyperplane would
                   change if those points were removed</li>
-               <li>I believe this <a
-                     href="https://en.wikipedia.org/wiki/Support-vector_machine#/media/File:Svm_separating_hyperplanes_(SVG).svg">image
-                     from Wikipedia</a> succinctly explains an SVM</li>
+               <li>I believe this <a href="https://en.wikipedia.org/wiki/Support-vector_machine#/media/File:Svm_separating_hyperplanes_(SVG).svg">image from Wikipedia</a> succinctly explains an SVM</li>
             </ul>
          </li>
       </ul>
       </p>
       <li><b>What models were part of the final predictions?</b></li>
-      <p>In the years-first & salary-second model (Y1S2): a random forest is used as the years prediction, and the mean
-         of a random forest & a support vector machine is used as the salary prediction.</p>
-      <p>In the salary-first & years-second model (S1Y2): random forests are used for both components.</p>
+      <p>
+         In the years-first & salary-second model (Y1S2): a random forest is used as the years prediction, and the mean of a random forest & a support vector machine is used as the salary prediction.
+      </p>
+      <p>
+         In the salary-first & years-second model (S1Y2): random forests are used for both components.
+      </p>
       <li><b>How is the total contract value calculated?</b></li>
-      <p>Contracts are usually reported in terms of total value, and players usually get five percent raises per year.
-         We can use the formula for the future value of an annuity as an analog, where P is the first year percent of
-         the salary cap multiplied by the salary cap, n is the number of contract years and r is 0.05 for the usual
-         raise.</p>
-         <p>FV=P &times; [<sup>(1+r)<sup>n</sup>-1</sup>] &frasl;<sub>r</sub></p>
+      <p>
+         Contracts are usually reported in terms of total value, and players usually get five percent raises per year (not compounded, but rather a percent of the first year salary). We can break this down into the base amount and the amount received by raises.
+      </p>
+      <p>Base Amount = Predicted Cap Percentage &times; Current Salary Cap &times; Number of Contract Years</p>
+      <p>Amount in Raises = (0.5 &times; Contract Years <sup>2</sup> - 0.5 &times; Contract Years) &times; 0.05 &times; Predicted Cap Percentage &times; Current Salary Cap</p>
    </ol>
 </body>
 

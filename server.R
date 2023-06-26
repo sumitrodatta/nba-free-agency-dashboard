@@ -10,9 +10,11 @@ source("similarity_pages_output_server.R")
 source("projections_server.R")
 source("actuals_server.R")
 
-current_year=2022
+current_year=2023
 
-train_eval = read_csv("Data/Train & Eval Set Combined.csv") %>% left_join(.,read_csv("Data/Player Photos.csv")) %>%
+player_photos=read_csv("Data/Player Photos.csv") %>% select(-idPlayer)
+
+train_eval = read_csv("Data/Train & Eval Set Combined.csv") %>% left_join(.,player_photos) %>%
   mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
 similarity_scores=read_csv("Data/Similarity Scores.csv") %>% 
   #add identifying info to tibble
@@ -20,8 +22,10 @@ similarity_scores=read_csv("Data/Similarity Scores.csv") %>%
   left_join(.,train_eval %>% select(seas_id,player_id,season),
             by=c('to_compare'='seas_id'))
 
-options = read_csv("Data/Options.csv")
-non_options = read_csv("Data/Non-Option Contracts.csv")
+options = read_csv("Data/Options.csv") %>% left_join(.,player_photos) %>%
+  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
+non_options = read_csv("Data/Non-Option Contracts.csv") %>% left_join(.,player_photos) %>%
+  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
 
 actuals = read_excel("Data/Actual Contracts.xlsx",
                      col_types = c("text","numeric","numeric","numeric","date","text"))
@@ -53,8 +57,12 @@ server <- function(input, output,session) {
                          sim_scores_df=similarity_scores %>% filter(season.x==current_year,season.y!=current_year),
                          show_future=FALSE)
   
-  proj_server(id="opt_proj",df=options)
-  proj_server(id="non_opt_proj",df=non_options,option_contract=FALSE)
+  proj_server(id="opt_proj_player",df=options %>% filter(option_type=="Player") %>% select(-option_type))
+  proj_server(id="opt_proj_club",df=options %>% filter(option_type=="Club") %>% select(-option_type))
+  proj_server(id="non_opt_proj_rfa",df=non_options %>% filter(type=="RFA") %>% select(-type),
+              option_contract=FALSE)
+  proj_server(id="non_opt_proj_ufa",df=non_options %>% filter(type=="UFA") %>% select(-type),
+              option_contract=FALSE)
   
   actuals_server(id="actuals",df=formatted_actuals)
   

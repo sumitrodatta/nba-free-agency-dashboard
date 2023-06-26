@@ -73,6 +73,9 @@ grouped_plots<-function(group_of_vars,plot_df){
                           "ast_last_3_yrs_per_game","stl_last_3_yrs_per_game",
                           "blk_last_3_yrs_per_game","tov_last_3_yrs_per_game")))
   }
+  else if (group_of_vars=="All-League Voting"){
+    plot_df<-plot_df %>% filter(str_detect(variable,"all_nba|all_defense"))
+  }
   if (str_detect(group_of_vars,"Shooting")){
     p<-plot_df %>% ggplot(aes(x=players,y=value,fill=variable)) +
       geom_col(position="dodge")+
@@ -115,7 +118,7 @@ sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
                                              seas_id %in% filtered()$to_compare) %>% 
                    mutate(players=paste0(player," (",season,")"))})
                  
-                 plottable_vars=names(df %>% select(-c(seas_id:experience,type,idPlayer,urlPlayerThumbnail)))
+                 plottable_vars=names(df %>% select(-c(seas_id:experience,type,urlPlayerThumbnail)))
                  
                  y_options=reactive({plottable_vars[plottable_vars != input$xcol]})
                  
@@ -167,12 +170,12 @@ sim_page_output_server <- function(id, df, sim_scores_df,show_future) {
                  
                  output$stats_table <- DT::renderDataTable({
                    req(input$historical_fa_yr)
-                   percent_cols=colnames(filtered_df() %>% select(contains("percent") & !"first_year_percent_of_cap"))
+                   percent_cols=colnames(filtered_df() %>% select((contains("percent")|contains("share")) & !"first_year_percent_of_cap"))
                    datatable(
                      filtered_df() %>%
                        select(-c(seas_id, player_id, players, 
                                  type:first_year_percent_of_cap,
-                                 idPlayer:urlPlayerThumbnail)) %>% relocate(player),
+                                 urlPlayerThumbnail)) %>% relocate(player),
                      extensions = "FixedColumns",
                      options = list(
                        scrollX = TRUE,
