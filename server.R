@@ -3,6 +3,7 @@ library(tidyverse)
 library(plotly)
 library(ggdark)
 library(readxl)
+library(arrow)
 
 source("moduleChangeTheme.R")
 source("similarity_pages_input_server.R")
@@ -12,19 +13,19 @@ source("actuals_server.R")
 
 current_year=2023
 
-player_photos=read_csv("Data/Player Photos.csv") %>% select(-idPlayer)
+player_photos=read_csv_arrow("Data/Player Photos.csv") %>% select(-idPlayer)
 
-train_eval = read_csv("Data/Train & Eval Set Combined.csv") %>% left_join(.,player_photos) %>%
+train_eval = read_csv_arrow("Data/Train & Eval Set Combined.csv") %>% left_join(.,player_photos) %>%
   mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
-similarity_scores=read_csv("Data/Similarity Scores.csv") %>% 
+similarity_scores=read_csv_arrow("Data/Similarity Scores.csv") %>% 
   #add identifying info to tibble
   left_join(.,train_eval %>% select(seas_id,player_id,season),by=c('seas_id_base'='seas_id')) %>%
   left_join(.,train_eval %>% select(seas_id,player_id,season),
             by=c('to_compare'='seas_id'))
 
-options = read_csv("Data/Options.csv") %>% left_join(.,player_photos) %>%
+options = read_csv_arrow("Data/Options.csv") %>% left_join(.,player_photos) %>%
   mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
-non_options = read_csv("Data/Non-Option Contracts.csv") %>% left_join(.,player_photos) %>%
+non_options = read_csv_arrow("Data/Non-Option Contracts.csv") %>% left_join(.,player_photos) %>%
   mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
 
 actuals = read_excel("Data/Actual Contracts.xlsx",
