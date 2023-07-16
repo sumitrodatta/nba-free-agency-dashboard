@@ -5,13 +5,17 @@ library(tidyverse)
 library(DT)
 library(shinycssloaders)
 library(plotly)
+library(DBI)
+library(dbplyr)
+library(RSQLite)
 
 source("moduleChangeTheme.R")
 source("similarity_pages_input_ui.R")
 source("similarity_pages_output_ui.R")
 source("projections_ui.R")
 
-train_eval = read_csv("Data/Train & Eval Set Combined.csv")
+drv <- dbDriver("SQLite")
+con <- dbConnect(drv, dbname = "Data/free_agent_db.sqlite")
 
 current_year=2023
 
@@ -30,16 +34,16 @@ ui <- dashboardPage(
                 tabItems(
                   tabItem(tabName = "similarity_scores",
                           fluidPage(
-                            fluidRow(sim_page_input_ui(id = "hist", df = train_eval,show_future=TRUE)),
+                            fluidRow(sim_page_input_ui(id = "hist", df = dbReadTable(con,"train_eval"),show_future=TRUE)),
                             hr(),
-                            fluidRow(sim_page_output_ui(id = "hist", df = train_eval))
+                            fluidRow(sim_page_output_ui(id = "hist", df = dbReadTable(con,"train_eval")))
                           )
                           ),
                   tabItem(tabName = "sim_scores_curr",
                           fluidPage(
-                            fluidRow(sim_page_input_ui(id = "curr", df = train_eval %>% filter(season==current_year),show_future=FALSE)),
+                            fluidRow(sim_page_input_ui(id = "curr", df = dbReadTable(con,"train_eval") %>% filter(season==current_year),show_future=FALSE)),
                             hr(),
-                            fluidRow(sim_page_output_ui(id = "curr", df = train_eval))
+                            fluidRow(sim_page_output_ui(id = "curr", df = dbReadTable(con,"train_eval")))
                           )
                   ),
                   tabItem(tabName = "tabThemes", uiChangeThemeDropdown()),
