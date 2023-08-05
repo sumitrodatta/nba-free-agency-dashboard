@@ -6,6 +6,9 @@ library(janitor)
 #zoo allows rolling operations
 library(zoo)
 library(readxl)
+library(DBI)
+library(dbplyr)
+library(RSQLite)
 
 current_year=2023
 
@@ -411,3 +414,28 @@ players_to_change=playerPhotos %>% filter(is.na(idPlayer)) %>% select(-idPlayer)
 finalizedPlayerPhotos=playerPhotos %>% filter(!is.na(idPlayer)) %>% bind_rows(players_to_change %>% select(-namePlayer)) %>% 
   mutate(urlPlayerThumbnail=paste0("https://ak-static.cms.nba.com/wp-content/uploads/headshots/nba/latest/260x190/",idPlayer,".png"))
 write_csv(finalizedPlayerPhotos,"Data/Player Photos.csv")
+
+train_eval_for_db = train_eval %>% 
+  left_join(.,finalizedPlayerPhotos %>% select(-idPlayer)) %>%
+  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
+
+similarity_scores_for_db=similarity_scores %>% 
+  #add identifying info to tibble
+  left_join(.,train_eval %>% select(seas_id,player_id,season),by=c('seas_id_base'='seas_id')) %>%
+  left_join(.,train_eval %>% select(seas_id,player_id,season),
+            by=c('to_compare'='seas_id'))
+
+options_for_db = options_decisions %>% 
+  left_join(.,finalizedPlayerPhotos %>% select(-idPlayer)) %>%
+  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
+non_options_for_db = non_options %>% 
+  left_join(.,finalizedPlayerPhotos %>% select(-idPlayer)) %>%
+  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
+
+drv <- dbDriver("SQLite")
+con <- dbConnect(drv, dbname = "Data/free_agent_db.sqlite")
+
+dbWriteTable(con,"train_eval",train_eval_for_db,overwrite=TRUE)
+dbWriteTable(con,"options",options_for_db,overwrite=TRUE)
+dbWriteTable(con,"non_options",non_options_for_db,overwrite=TRUE)
+dbWriteTable(con,"similarity_scores",similarity_scores_for_db,overwrite=TRUE)

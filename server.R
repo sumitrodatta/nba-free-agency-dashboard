@@ -3,7 +3,9 @@ library(tidyverse)
 library(plotly)
 library(ggdark)
 library(readxl)
-library(arrow)
+library(DBI)
+library(dbplyr)
+library(RSQLite)
 
 source("moduleChangeTheme.R")
 source("similarity_pages_input_server.R")
@@ -11,30 +13,19 @@ source("similarity_pages_output_server.R")
 source("projections_server.R")
 source("actuals_server.R")
 
+drv <- dbDriver("SQLite")
+con <- dbConnect(drv, dbname = "Data/free_agent_db.sqlite")
+
 current_year=2023
-
-player_photos=read_csv_arrow("Data/Player Photos.csv") %>% select(-idPlayer)
-
-train_eval = read_csv_arrow("Data/Train & Eval Set Combined.csv") %>% left_join(.,player_photos) %>%
-  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
-similarity_scores=read_csv_arrow("Data/Similarity Scores.csv") %>% 
-  #add identifying info to tibble
-  left_join(.,train_eval %>% select(seas_id,player_id,season),by=c('seas_id_base'='seas_id')) %>%
-  left_join(.,train_eval %>% select(seas_id,player_id,season),
-            by=c('to_compare'='seas_id'))
-
-options = read_csv_arrow("Data/Options.csv") %>% left_join(.,player_photos) %>%
-  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
-non_options = read_csv_arrow("Data/Non-Option Contracts.csv") %>% left_join(.,player_photos) %>%
-  mutate(urlPlayerThumbnail=paste('<img src =',' "',urlPlayerThumbnail,'" ', 'height="60"></img>', sep = ""))
 
 actuals = read_excel("Data/Actual Contracts.xlsx",
                      col_types = c("text","numeric","numeric","numeric","date","text"))
 
 formatted_actuals=left_join(actuals,
-                            train_eval %>% filter(season==current_year) %>% 
+                            dbReadTable(con,"train_eval") %>% filter(season==current_year) %>% 
                               select(player,type,age,photo=urlPlayerThumbnail)) %>%
-  relocate(photo,age,type,.after="player") %>% mutate(source=paste0('<a href="',source,'" target="_blank">Link</a>')) %>%
+  relocate(photo,age,type,.after="player") %>% 
+  mutate(source=if_else(is.na(source),NA,paste0('<a href="',source,'" target="_blank">Link</a>'))) %>%
   #when formatted, date jumps one day ahead
   mutate(date=date+24*60*60)
 
@@ -50,19 +41,21 @@ server <- function(input, output,session) {
   #                               " navigating using desktop views."),
   #                type="info")
   
-  sim_page_input_server(id="hist",df=train_eval)
-  sim_page_output_server(id="hist",df=train_eval,sim_scores_df=similarity_scores,show_future=TRUE)
+  sim_page_input_server(id="hist",df=dbReadTable(con,"train_eval"))
+  sim_page_output_server(id="hist",df=dbReadTable(con,"train_eval"),
+                         sim_scores_df=dbReadTable(con,"similarity_scores"),show_future=TRUE)
 
-  sim_page_input_server(id="curr",df=train_eval %>% filter(season==current_year))
-  sim_page_output_server(id="curr",df=train_eval,
-                         sim_scores_df=similarity_scores %>% filter(season.x==current_year,season.y!=current_year),
+  sim_page_input_server(id="curr",df=dbReadTable(con,"train_eval") %>% filter(season==current_year))
+  sim_page_output_server(id="curr",df=dbReadTable(con,"train_eval"),
+                         sim_scores_df=dbReadTable(con,"similarity_scores") %>% 
+                           filter(season.x==current_year,season.y!=current_year),
                          show_future=FALSE)
   
-  proj_server(id="opt_proj_player",df=options %>% filter(option_type=="Player") %>% select(-option_type))
-  proj_server(id="opt_proj_club",df=options %>% filter(option_type=="Club") %>% select(-option_type))
-  proj_server(id="non_opt_proj_rfa",df=non_options %>% filter(type=="RFA") %>% select(-type),
+  proj_server(id="opt_proj_player",df=dbReadTable(con,"options") %>% filter(option_type=="Player") %>% select(-option_type))
+  proj_server(id="opt_proj_club",df=dbReadTable(con,"options") %>% filter(option_type=="Club") %>% select(-option_type))
+  proj_server(id="non_opt_proj_rfa",df=dbReadTable(con,"non_options") %>% filter(type=="RFA") %>% select(-type),
               option_contract=FALSE)
-  proj_server(id="non_opt_proj_ufa",df=non_options %>% filter(type=="UFA") %>% select(-type),
+  proj_server(id="non_opt_proj_ufa",df=dbReadTable(con,"non_options") %>% filter(type=="UFA") %>% select(-type),
               option_contract=FALSE)
   
   actuals_server(id="actuals",df=formatted_actuals)
